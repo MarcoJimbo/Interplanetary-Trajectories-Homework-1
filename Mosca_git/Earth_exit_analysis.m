@@ -12,3 +12,6 @@ for i=1:length(Deltav_vec)
 end
 
 surf(h_leo_vec,Deltav_vec,v_inf)
+zlabel('v_inf');
+ylabel('DeltaV');
+xlabel('h_leo');
