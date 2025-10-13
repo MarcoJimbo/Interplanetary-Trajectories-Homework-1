@@ -1,4 +1,4 @@
-function v_inf = deltaV_to_vinf(delta_V,h_leo)
+function v_inf = deltaV_to_vinf(delta_V,h_LEO,R_E,mu_E)
 % Function to evaluate the hyperbolic excess velocity (v_inf) from an impulsive velocity change (delta_V) applied in a Low Earth Orbit (LEO) at altitude h_LEO.
 %
 % INPUT: delta_V [km/s] and h_LEO [km]
@@ -6,11 +6,8 @@ function v_inf = deltaV_to_vinf(delta_V,h_leo)
 % OUTPUT: v_inf [km/s]  
 %
 %% DATA
-mu_E = 398600; % [km^3/s^2] 
-mu_sun= 1.327*10^11; % [km^3/s^2] 
-r_e_sun= 149.6*10^6;
-R_E  = 6378;         % [km] Earth radius         
-r_leo = R_E + h_leo; % [km]
+         
+r_leo = R_E + h_LEO; % [km]
 %%
 % Circular orbital velocity in LEO
 v_c = sqrt(mu_E / r_leo);
@@ -30,8 +27,5 @@ end
 % Calculation of hyperbolic excess velocity (v_inf)
 v_inf = sqrt(v_p^2 - 2 * mu_E / r_leo);
 
-e_hyp=1+(r_leo/mu_E)*(v_inf)^2;
-
-v_E=sqrt(mu_sun/r_e_sun);
 
 end

@@ -19,6 +19,8 @@ clc
 % formattazione calcolo
 format long 
 
+%% caricamento Kernels 
+cspice_furnsh('kernels\mykernels.furnsh' );
 
 %% Definizione input di missione
 
@@ -46,8 +48,6 @@ r_p_step = 10; % [km] risoluzione di variabile di progetto r_p
 
 %% estrazione dati kernels su pianeti e lune oggetto di missione
 
-% caricamento Kernels 
-cspice_furnsh('kernels\mykernels.furnsh' );
 
 % raggi pianeti e lune [km]
 R_Venere = cspice_bodvrd( 'Venus', 'RADII', 3 );
