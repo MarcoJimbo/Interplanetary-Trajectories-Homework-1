@@ -145,18 +145,33 @@ dV_tot = zeros(1,length(dV_Terra));
 t_durata = zeros(size(dV_tot));
 t_departure = strings(size(dV_tot));
 
-% determinazione velocità di eccesso iperbolica in uscita SOI Terra [km/s]
+% determinazione velocità di eccesso iperbolica in entrata SOI Urano [km/s]
 % inizializzazione
-v_inf = zeros(size(dV_tot));
+v_inf = zeros(size(dV_tot)); % [km/s] velocità di eccesso iperbolico in entrata SOI Urano
+r_SC_f = cell(1,length(dV_tot));
+v_SC_f = cell(1,length(dV_tot));
 % calcolo
+% poichè scelta sdr è arbitraria in questa fase scelgo sdr {O} centrato in Sole
+% con x in direzione Terra e z in direzione perpendicolare al piano
+% orbitale dei pianeti (ipotesi complanarità)
+r_SC_i = d_Terra * [ 1 , 0 , 0 ]; % [km] posizione SC dopo uscita SOI Terra wrt {O}
+v_SC_i = cell(1,length(dV_tot)); % [km/s] velocità SC prima di entrata SOI Urano wrt {O}
+v_i = [ 0 , 1 , 0 ]; % [km/s] versore velocità SC dopo uscita SOI Terra wrt {O} (ipotizzo tangenziale a traiettoria Terrestre)
+v_Urano_f = cell(1,length(dV_tot)); % [km/s] velocità Urano ad encounter
 for i = 1:size(dV_tot,2)
-v_inf(1,i) = deltaV_to_vinf(dV_Terra(1,i),h_LEO,R_Terra,gm_Terra);
-
+    %  velocità di eccesso iperbolica in uscita SOI Terra [km/s]
+    v_inf_T = deltaV_to_vinf(dV_Terra(1,i),h_LEO,R_Terra,gm_Terra); 
+    % vettore velocità SC a uscita SOI Terra wrt {O} [km/s]
+    v_SC_i{i} = v_inf_T * v_i;
+    % statovettore SC all'encounter con Urano
+    [rx_f,ry_f,rz_f,vx_f,vy_f,vz_f,theta2] = interplanetary_transfer(r_SC_i(1),r_SC_i(2),r_SC_i(3),v_SC_i{i}(1),v_SC_i{i}(2),v_SC_i{i}(3),gm_Sole,d_Urano);
+    r_SC_f{i} = [ rx_f , ry_f , rz_f ];
+    v_SC_f{i} = [ vx_f , vy_f , vz_f ];
+    % vettore velocità Urano all'encounter [km/s]
+    v_Urano_f{i} = sqrt( gm_Sole / d_Urano ) * [ -sin(theta2) , cos(theta2) , 0 ];
+    % scalare velocità di eccesso iperbolico Sc in entrata SOI Urano [km/s]
+    v_inf(1,i) = norm( v_SC_f{i} - v_Urano_f{i} );
 end
-
-% determinazione impulso su orbita LEO Terra [km/s]
-
-
 
 % determinazione impulso frenata al pericentro orbita iperbolica Urano [km/s]
 

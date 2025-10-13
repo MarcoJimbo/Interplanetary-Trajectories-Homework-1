@@ -9,5 +9,6 @@
 *.nef
 *.mtl
 *.csv
+*.asv
 mice/
 kernels/
