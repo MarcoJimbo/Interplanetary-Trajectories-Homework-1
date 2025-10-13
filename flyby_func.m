@@ -49,6 +49,7 @@ end
 V_plus=sqrt(v_inf^2+Planet_abs_velocicty^2+2*v_inf*Planet_abs_velocicty*cosd(alpha_plus));
 
 %Calcolo Delta_fin
-Delta_fin=atan2d((v_inf*sind(alpha_minus)/V_plus),((Planet_abs_velocicty+v_inf*cosd(alpha_minus))/V_plus));
+Delta_fin=atan2d((v_inf*sind(alpha_plus)/V_plus),((Planet_abs_velocicty+v_inf*cosd(alpha_plus))/V_plus));
 end
+
 
