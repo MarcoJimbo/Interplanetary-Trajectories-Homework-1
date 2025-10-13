@@ -7,11 +7,12 @@ Deltav_vec=(2.9:0.1:4.5); %[km/s] ogni 100m/s
 
 for i=1:length(Deltav_vec)
     for j=1:length(h_leo_vec)
-        v_inf(i,j)=deltaV_to_vinf(Deltav_vec(i),h_leo_vec(j));
+        v_inf(i,j)=deltaV_to_vinf_2(Deltav_vec(i),h_leo_vec(j));
     end
 end
 
 surf(h_leo_vec,Deltav_vec,v_inf)
 zlabel('v_inf');
 ylabel('DeltaV');
+
 xlabel('h_leo');
