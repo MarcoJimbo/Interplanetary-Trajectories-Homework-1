@@ -6,6 +6,13 @@
 clc
 close all
 
+%% Definition of the problem constants (all in km and km/s)
+MuS = 1.32712440018e11;         % Sun GM [km^3/s^2]
+MuE = 398.6;                    % Earth GM [km^3/s^2]
+Re = 1.49380e8;                 % Earth semimajore axis [km]
+Rs  = 9.537e8;                  % Saturn semimajor axis [km]
+ve = 29.8;                      % Earth orbital speed [km/s]
+
 %% Transfer arc variable to go from Earth to Saturn (1 independent)
 % When we are outside the Earth SOI the hyperbolic excess velocity v_inf
 % coincides with the difference between the S/C velocity at perigee of the 
@@ -22,17 +29,22 @@ e = 1-Re/a;                                          % eccentricity of interplan
 %% True anomaly and velocity at the arrival of Saturn SOI
 value=(a*(1-e^2)/(e*Rs))- 1/e;                                  % variable to check the value of true anomaly
 theta_star_plus = acos(value);                                  % true anomaly of S/C outside the Saturn SOI
-v_r_plus = sqrt(MuS/a*(1-e^2))*e*sin(theta_star_plus);          % radial component of S/C velocity at the encounter of Saturn SOI
-v_theta_plus = sqrt(MuS/a*(1-e^2)*(1+e*cos(theta_star_plus)));  % tangent component of S/C velocity at the encounter of Saturn SOI
+v_r_plus = sqrt(MuS/a*(1-e^2))*e*sin(theta_star_plus);          % radial orbital component of S/C velocity at the encounter of Saturn SOI
+v_theta_plus = sqrt(MuS/a*(1-e^2)*(1+e*cos(theta_star_plus)));  % tangent orbital component of S/C velocity at the encounter of Saturn SOI
 v_plus = sqrt(v_r_plus^2 + v_theta_plus^2);
 
-%% Check if the value of true anomaly is in the interval [-1,1]
+%% Check if the value of true anomaly is in the range [-1,1]
 
 if value<-1 || value>1
     fprintf('ERROR!! the true anomaly is a complex number, check the hyperbolic excess velocity');
     return
 end
+%% Check if the eccentricity of the transfer arc is in the range [0,inf]
 
+if e<0
+    fprintf('ERROR!! the eccentrcity must be a positive number, check the hyperbolic excess velocity');
+    return
+end
 %% Plots and results
 
 fprintf('True anomaly at the encounter of Saturn SOI : %.2f°\n', rad2deg(theta_star_plus));
@@ -63,5 +75,6 @@ plot(Rs*cos(theta_circle), Rs*sin(theta_circle), '-m');
 % Draw Earth orbit for context
 theta_circle = linspace(0,2*pi,200);
 plot(Re*cos(theta_circle), Re*sin(theta_circle), '-g');
+
 
 legend('Interplanetary transfer arc','Sun','Saturn orbit','Earth orbit');
