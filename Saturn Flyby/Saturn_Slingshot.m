@@ -35,10 +35,10 @@ r_soi = Rs*(Mus/MuS)^(2/5); % Sphere of Influence radius [km]
 
 
 %% Problem INPUTS (aka the flyby variables, 3 independent ones)
-h = 30;                  % flyby altitude [km]
+h = 78768;                  % minimum flyby altitude to not encounter the Saturn's rings[km]
 r_p = h + rs;            % 1) flyby radius [km]
 v_minus = 12;            % 2) heliocentric velocity magnitude of the SC @ SOI encounter [km/s]
-delta_i = 30;            % 3) Angle (in degrees) between SC velocity @SOI encounter and planet velocity
+delta_i = 30;            % 3) Angle (in degrees) between SC velocity @SOI encounter and planet velocity [deg]
 
 % (NOTE: v_minus and delta_i depend on the interplanetary transfer arc from Earth to Saturn,
 % they can either be assumed or evaluated in a separate script, together they form
@@ -73,6 +73,7 @@ v_final = sqrt(v_inf^2 + vp^2 + 2*v_inf*vp*cos(Delta_f)); % velocity MAGNITUDE [
 C_d_f = (vp + v_inf*cos(Delta_f))/v_final;
 S_d_f = (v_inf*sin(Delta_f))/v_final;
 delta_f = 2*atan(S_d_f/(1+C_d_f));
+DeltaV = abs(v_final-v_minus);
 
 %% Plots and results
 
@@ -80,6 +81,7 @@ fprintf('Initial hyperbolic excess velocity: %.2f km/s\n', v_inf);
 fprintf('Deflection angle xi: %.2f deg\n', rad2deg(xi));
 fprintf('Final heliocentric speed: %.2f km/s\n', v_final);
 fprintf('Final flight angle delta_f: %.2f deg\n', rad2deg(delta_f));
+fprintf('Delta_V exiting Saturn: %.2f km/s\n',DeltaV);
 
 %% Plot of the flyby trajectory in Saturn-centered frame
 
@@ -89,7 +91,7 @@ xlabel('x [km]'); ylabel('y [km]');
 
 % Range of true anomaly
 theta = linspace(-theta_star, theta_star, 1000);
-r = (a_hyp*(e_hyp^2 - 1))./(1 + e_hyp*cos(theta));
+r = (a_hyp*(1-e_hyp^2))./(1 + e_hyp*cos(theta));
 
 % Convert to Cartesian
 x = r .* cos(theta);
@@ -99,7 +101,7 @@ y = r .* sin(theta);
 plot(x, y, 'b', 'LineWidth', 1.5);
 
 % Plot periapsis point (+rp or -rp if cw o ccw)
-plot(-r_p, 0, 'ro', 'MarkerFaceColor','r');
+plot(r_p, 0, 'ro', 'MarkerFaceColor','r');
 
 % Draw Saturn with PNG texture
 [img,~,alpha] = imread('saturn.png');
@@ -113,4 +115,6 @@ image('XData',xRange,'YData',yRange,...
 theta_circle = linspace(0,2*pi,200);
 plot(r_soi*cos(theta_circle), r_soi*sin(theta_circle), '--k');
 
-legend('Hyperbolic trajectory','Periapsis','Saturn','SOI');
+legend('Hyperbolic trajectory','Periapsis','SOI of Saturn');
+xlim([-5e6 5e6]);
+ylim([-3e6 3e6]);
