@@ -87,12 +87,12 @@ d_Saturno =  1427000000;
 d_Urano =    2870660000;
 
 % raggi SOI dei pianeti [km]
-SOI_Venere = d_Venere*(gm_Venere/gm_Sole)^5;
-SOI_Terra = d_Terra*(gm_Terra/gm_Sole)^5;
-SOI_Marte = d_Marte*(gm_Marte/gm_Sole)^5;
-SOI_Giove = d_Giove*(gm_Giove/gm_Sole)^5;
-SOI_Saturno = d_Saturno*(gm_Saturno/gm_Sole)^5;
-SOI_Urano = d_Urano*(gm_Urano/gm_Sole)^5;
+SOI_Venere  = d_Venere  * (gm_Venere/gm_Sole)^(2/5);
+SOI_Terra   = d_Terra   * (gm_Terra /gm_Sole)^(2/5);
+SOI_Marte   = d_Marte   * (gm_Marte /gm_Sole)^(2/5);
+SOI_Giove   = d_Giove   * (gm_Giove /gm_Sole)^(2/5);
+SOI_Saturno = d_Saturno * (gm_Saturno/gm_Sole)^(2/5);
+SOI_Urano   = d_Urano   * (gm_Urano /gm_Sole)^(2/5);
 
 % velocità pianeti [km/s]
 v_Venere = sqrt(gm_Sole/d_Venere);
@@ -137,48 +137,85 @@ E_Urano_0 = 2*atan( sqrt(1-elts_Urano_0(2)^2) / (1+elts_Urano_0(2)) * tan(elts_U
 % inizializzazione variabili di progetto 
 % dV_Terra [km/s]
 rp_Terra = R_Terra + h_LEO; % [km]
+rp_Urano = R_Urano + h_target; % [km]
 Vp_Terra = sqrt( gm_Terra / rp_Terra ); % [km/s]
 [dV_Terra] = dV_setter(d_Terra,d_Urano,gm_Sole,gm_Terra,rp_Terra,Vp_Terra,k1,dV_step);
 
 % inizializzazione variabili di costo 
 dV_tot = zeros(1,length(dV_Terra));
 t_durata = zeros(size(dV_tot));
-t_departure = strings(size(dV_tot));
+UTC_departure = strings(size(dV_tot));
+UTC_arrival = strings(size(dV_tot));
 
 % determinazione velocità di eccesso iperbolica in entrata SOI Urano [km/s]
 % inizializzazione
 v_inf = zeros(size(dV_tot)); % [km/s] velocità di eccesso iperbolico in entrata SOI Urano
 r_SC_f = cell(1,length(dV_tot));
 v_SC_f = cell(1,length(dV_tot));
+X_SC_f = cell(1,length(dV_tot)); % statovettore dello Spacecraft all'encounter + informazioni su traiettoria interplanetaria
+Earth_exit = cell(1,length(dV_tot)); % informazioni su traiettoria fuga da Terra 
+Uranus_approach = cell(1,length(dV_tot)); % informazioni su traiettoria iperbolica in SOI Urano 
+V_E = [ 0 , v_Terra , 0];
 % calcolo
 % poichè scelta sdr è arbitraria in questa fase scelgo sdr {O} centrato in Sole
 % con x in direzione Terra e z in direzione perpendicolare al piano
 % orbitale dei pianeti (ipotesi complanarità)
 r_SC_i = d_Terra * [ 1 , 0 , 0 ]; % [km] posizione SC dopo uscita SOI Terra wrt {O}
 v_SC_i = cell(1,length(dV_tot)); % [km/s] velocità SC prima di entrata SOI Urano wrt {O}
-v_i = [ 0 , 1 , 0 ]; % [km/s] versore velocità SC dopo uscita SOI Terra wrt {O} (ipotizzo tangenziale a traiettoria Terrestre)
+v_i = [ 0 , 1 , 0 ]; % versore velocità SC dopo uscita SOI Terra wrt {O} (ipotizzo tangenziale a traiettoria Terrestre)
 v_Urano_f = cell(1,length(dV_tot)); % [km/s] velocità Urano ad encounter
 for i = 1:size(dV_tot,2)
     %  velocità di eccesso iperbolica in uscita SOI Terra [km/s]
-    v_inf_T = deltaV_to_vinf(dV_Terra(1,i),h_LEO,R_Terra,gm_Terra); 
+    [v_inf_T, delta_t, ok, status_msg, info] = deltaV_to_vinf(dV_Terra(1,i),h_LEO,R_Terra,gm_Terra,SOI_Terra); 
+    Earth_exit{i} = struct(...
+        'dV_Terra',   dV_Terra(1,i),...  % [km/s] impulso erogato tangenziale a orbita LEO di partenza
+        'v_inf_T',    v_inf_T,...        % [km/s] velocità di eccesso iperbolico
+        'delta_t',    delta_t,...        % [s] tempo di volo fuga da Terra
+        'ok',         ok,...             % [bool] esito fuga
+        'status_msg', status_msg,...     % [str] diagnostica
+        'info',       info);             % [struct] parametri orbita di fuga (v_c, v_p, v_esc, a, e, F_SOI)
     % vettore velocità SC a uscita SOI Terra wrt {O} [km/s]
-    v_SC_i{i} = v_inf_T * v_i;
+    v_SC_i{i} = V_E + v_inf_T * v_i;
     % statovettore SC all'encounter con Urano
-    [rx_f,ry_f,rz_f,vx_f,vy_f,vz_f,theta2] = interplanetary_transfer(r_SC_i(1),r_SC_i(2),r_SC_i(3),v_SC_i{i}(1),v_SC_i{i}(2),v_SC_i{i}(3),gm_Sole,d_Urano);
+    [rx_f,ry_f,rz_f,vx_f,vy_f,vz_f,thetat2,delta_t,ok,status_msg,info] = interplanetary_transfer(r_SC_i(1),r_SC_i(2),r_SC_i(3),v_SC_i{i}(1),v_SC_i{i}(2),v_SC_i{i}(3),gm_Sole,d_Urano);
     r_SC_f{i} = [ rx_f , ry_f , rz_f ];
     v_SC_f{i} = [ vx_f , vy_f , vz_f ];
+    X_SC_f{i} = struct( ...
+    'r',           [rx_f, ry_f, rz_f], ...  % [km] vettore posizione
+    'v',           [vx_f, vy_f, vz_f], ...  % [km/s] vettore velocità
+    'theta_t_2',   thetat2, ...             % [rad] anomalia totale = (anomalia vera + argomento al pericentro)
+    'delta_t',     delta_t, ...             % [s] tempo di volo della trasferta
+    'ok',          ok, ...                  % [bool] esito trasferta
+    'status_msg',  status_msg, ...          % [str] diagnostica
+    'info',        info );                  % [struct] parametri della trasferta (conic,e,p,a,rp,ra,i,theta1,theta2,branch,rf_chk,delta_t)
     % vettore velocità Urano all'encounter [km/s]
-    v_Urano_f{i} = sqrt( gm_Sole / d_Urano ) * [ -sin(theta2) , cos(theta2) , 0 ];
+    v_Urano_f{i} = sqrt( gm_Sole / d_Urano ) * [ -sin(thetat2) , cos(thetat2) , 0 ];
     % scalare velocità di eccesso iperbolico Sc in entrata SOI Urano [km/s]
-    v_inf(1,i) = norm( v_SC_f{i} - v_Urano_f{i} );
+    if X_SC_f{i}.ok % se trasferta ha successo
+        v_inf(1,i) = norm( v_SC_f{i} - v_Urano_f{i} );
+        % determinazione impulso frenata al pericentro orbita iperbolica Urano [km/s]
+        [d_V,delta_t,ok,status_msg,info] = Uranus_capture(v_inf(1,i),rp_Urano,gm_Urano,SOI_Urano);
+        Uranus_approach{i} = struct(...
+            'd_V',        d_V,...            % [km/s] impulso erogato per frenata
+            'delta_t',    delta_t,...        % [s] tempo di volo orbita iperbolica di approccio
+            'ok',         ok,...             % [bool] esito approccio
+            'status_msg', status_msg,...     % [str] diagnostica
+            'info',       info );            % [struct] parametri dell’iperbola (a,e,F_SOI, nH, v_p, ecc.)
+        if ok
+            % determinazione delta_V complessivo
+            dV_tot(1,i) = abs(dV_Terra(1,i)) + abs(d_V);
+            % determinazione durata missione
+            t_durata(1,i) = (Earth_exit{i}.delta_t + X_SC_f{i}.delta_t + Uranus_approach{i}.delta_t) / 86400; % [days] durata della missione
+            % determinazione prima finestra utile missione
+            t_wait = ( wrapTo2Pi( X_SC_f{i}.theta_t_2 - E_Urano_0 + E_Terra_0 - ( v_Urano / d_Urano - v_Terra / d_Terra ) * Earth_exit{i}.delta_t - ( v_Urano / d_Urano ) * X_SC_f{i}.delta_t ) ) / ( v_Urano / d_Urano ); % [s] tempo che è necessario aspettare per partenza missione
+            Et_dep = ET_t0 + t_wait; % partenza in ET
+            UTC_departure{i} = cspice_et2utc(Et_dep,'C',2); % partenza in UTC
+            Et_arrival = Et_dep + X_SC_f{i}.delta_t + Uranus_approach{i}.delta_t; % arrivo su orbita target in ET
+            UTC_arrival{i} = cspice_et2utc(Et_arrival,'C',2); % arrivo su orbita target in UTC
+        end
+    end
 end
 
-% determinazione impulso frenata al pericentro orbita iperbolica Urano [km/s]
 
 
-% determinazione costo proposta 1
-% determinazione delta_V complessivo
 
-% determinazione durata missione
-
-% determinazione prima finestra utile missione
