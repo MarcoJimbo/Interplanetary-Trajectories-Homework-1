@@ -1,4 +1,4 @@
-function [v_inf, delta_t, ok, status_msg, info] = deltaV_to_vinf(delta_V, h_LEO, R_E, mu_E, r_SOI_E)
+function [v_inf, delta_t, ok, status_msg, info] = deltaV_to_vinf(delta_V, r_p, mu_E, r_SOI_E)
 % Converte un impulso tangenziale applicato in LEO in v_inf eliocentrico
 % planetocentrico (rispetto alla Terra) e calcola il TEMPO di volo dal
 % pericentro (punto di applicazione dell'impulso) fino alla frontiera
@@ -26,16 +26,15 @@ ok = true; status_msg = "ok";
 v_inf = NaN; delta_t = NaN; info = struct();
 
 % controlli input 
-if any(~isfinite([delta_V, h_LEO, R_E, mu_E, r_SOI_E])) || ...
-        (R_E <= 0) || (mu_E <= 0) || (h_LEO < 0) || (r_SOI_E <= 0)
+if any(~isfinite([delta_V, r_p, mu_E, r_SOI_E])) || ...
+        (r_p <= 0) || (mu_E <= 0) || (r_SOI_E <= 0)
     ok=false; status_msg="Input non validi."; return;
 end
-if r_SOI_E <= (R_E + h_LEO)
+if r_SOI_E <= (r_p)
     ok=false; status_msg="r_SOI_E deve essere > r_LEO."; return;
 end
 
-% grandezze di base 
-r_p   = R_E + h_LEO;           % [km] raggio pericentro (LEO)
+% grandezze di base  
 v_c   = sqrt(mu_E / r_p);      % [km/s] velocità circolare in LEO
 v_p   = v_c + delta_V;         % [km/s] velocità dopo l'impulso
 v_esc = sqrt(2*mu_E / r_p);    % [km/s] velocità di fuga parabolica

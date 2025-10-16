@@ -1,4 +1,4 @@
-function[dV] = dV_setter(r1,r2,gm_Sole,GM,r_p,V_p,k1,dV_step)
+function[dV] = dV_setter(r1,r2,gm_Sole,GM,r_p,V_p,k1,k12,dV_step)
 %%% function che determina il vettore riga dV variabile di progetto.
 %%% come dV_min viene scelto:
 %%% 1) se trasferta verso pianeta esterno impulso che comporta trasferta alla Hohmann 
@@ -18,13 +18,14 @@ function[dV] = dV_setter(r1,r2,gm_Sole,GM,r_p,V_p,k1,dV_step)
 %%% 5) r_p = [km] raggio al pericentro di orbita di partenza intorno pianeta
 %%% 6) V_p = [km/s] velocità al pericentro di orbita di partenza intorno pianeta (precedentemente manovra)
 %%% 7) k1 = costante moltiplicativa che definisce dV_max = k1 * dV_min
-%%% 8) dV_step = [km/s] risoluzione di variabile di progetto dV
+%%% 8) k1 = [km/s] impulso massimo erogabile se con dV = 0 si raggiunge prossimo pianeta di missione
+%%% 9) dV_step = [km/s] risoluzione di variabile di progetto dV
 
 %%% OUTPUT:
 %%% dV = vector 1xn [km/s] degli impulsi erogati al pericentro di orbita dentro SOI
 
-if nargin ~= 8
-    error('Il numero di input di dV_setter deve essere 8 (r1,r2,gm_Sole,GM,r_p,V_p,k1,dV_step)')
+if nargin ~= 9
+    error('Il numero di input di dV_setter deve essere 9 (r1,r2,gm_Sole,GM,r_p,V_p,k1,k12,dV_step)')
 end
 
 [i,d_V1] = Hohmann_Transfer(r1,r2,gm_Sole);
@@ -34,7 +35,7 @@ if i
         dV_max = k1 * dV_min;
     else 
         dV_min = 0;
-        dV_max = 5;
+        dV_max = k12;
     end
 else 
     dV_max = sqrt( 2*( GM / (r_p) + d_V1^2 / 2) ) - V_p ;
@@ -42,7 +43,7 @@ else
         dV_min = k1 * dV_max;
     else 
         dV_max = 0;
-        dV_min = -5;
+        dV_min = -k12;
     end
 end
 
