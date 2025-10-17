@@ -22,63 +22,64 @@ function[SOLUZIONE] = TERRA_URANO(d_Terra,d_Urano,gm_Terra,gm_Urano,gm_Sole,SOI_
 %%% dV_step:         SCALAR [1x1] = risoluzione di variabile di progetto dV [km/s]
 
 %%% OUTPUT:
-%%% SOLUZIONE
-%%%          .
-%%%          .
-%%%          .
-%%%          .Earth_Exit
-%%%                     .
-%%%                     .
-%%%                     .
-%%%                     .
-%%%                     .
-%%%                     .info
-%%%                          .
-%%%                          .
-%%%                          .
-%%%                          .
-%%%                          .
-%%%                          .
-%%%                          .
-%%%                          .
-%%%                          .
-%%%                          .
+%%% SOLUZIONE:                                     CELL   [1xn] of struct of possible solutions performances
+%%%          .d_V_tot:                             SCALAR [1x1] = impulso totale missione [km/s]
+%%%          .data_0:                              STRING       = data di lancio (calendario)
+%%%          .data_f:                              STRING       = data di arrivo (calendario)
+%%%          .Earth_Exit:                          STRUCT [1x1] = info orbita di fuga Terra
+%%%                     .dV_terra:                 SCALAR [1x1] = impulso erogato su LEO [km/s]
+%%%                     .v_inf_T:                  SCALAR [1x1] = velocità di eccesso iperbolico [km/s]
+%%%                     .delta_t:                  SCALAR [1x1] = tempo di volo [s]
+%%%                     .ok:                       BOOL         = esito fuga
+%%%                     .status_msg:               STRING       = diagnostica
+%%%                     .info:                     STRUCT [1x1] = info orbita
+%%%                          .branch:              STRING       = conic
+%%%                          .r_p:                 SCALAR [1x1] = raggio al pericentro [km]
+%%%                          .v_c:                 SCALAR [1x1] = velocità LEO [km/s]
+%%%                          .v_p:                 SCALAR [1x1] = velocità dopo impulso [km/s]
+%%%                          .v_esc:               SCALAR [1x1] = velocità di fuga parabolica [km/s]
+%%%                          .a:                   SCALAR [1x1] = semi asse maggiore [km]
+%%%                          .e:                   SCALAR [1x1] = eccentricità
+%%%                          .F_SOI:               SCALAR [1x1] = anomalia iperbolica al raggio della SOI [rad]
+%%%                          .nH:                  SCALAR [1x1] = anomalia media iperbolica [rad/s]
+%%%                          .r_SOI:               SCALAR [1x1] = raggio SOI [km]
 %%%          .Int_Transfer
-%%%                       .
-%%%                       .
-%%%                       .
-%%%                       .
-%%%                       .
-%%%                       .
-%%%                       .info
-%%%                            .
-%%%                            .
-%%%                            .
-%%%                            .
-%%%                            .
-%%%                            .
-%%%                            .
-%%%                            .
-%%%                            .
-%%%                            .
-%%%                            .
-%%%                            .
+%%%                       .r:                      DOUBLE [1x3] = posizione SC ad encounter Urano wrt s.d.r. {O} [km]
+%%%                       .v:                      DOUBLE [1x3] = velocità SC ad encounter Urano wrt s.d.r {O} [km/s]
+%%%                       .theta_t_2:              SCALAR [1x1] = anomalia totale ad encounter wrt s.d.r {O} [rad]
+%%%                       .delta_t:                SCALAR [1x1] = tempo di volo [s]
+%%%                       .ok:                     BOOL         = esito
+%%%                       .status_msg:             STRING       = diagnostica
+%%%                       .info                    STRUCT [1x1] = info orbita interplanetaria
+%%%                            .conic:             STRING       = conic type
+%%%                            .e:                 SCALAR [1x1] = eccentricità
+%%%                            .p:                 SCALAR [1x1] = semilato retto [km]
+%%%                            .a:                 SCALAR [1x1] = semiasse maggiore [km]
+%%%                            .rp:                SCALAR [1x1] = raggio al pericentro [km]
+%%%                            .ra:                SCALAR [1x1] = raggio all'apocentro [km]
+%%%                            .i:                 SCALAR [1x1] = inclinazione [rad]
+%%%                            .theta1:            SCALAR [1x1] = anomalia vera iniziale [rad]
+%%%                            .theta2:            SCALAR [1x1] = anomalia vera encounter [rad]
+%%%                            .branch:            STRING       = direzione trasferta
+%%%                            .rf_chk:            SCALAR [1x1] = check rf raggiunto [km]
+%%%                            .delta_t:           SCALAR [1x1] = tempo di volo [s]
 %%%          .Uranus_Entrance
-%%%                          .
-%%%                          .
-%%%                          .
-%%%                          .
-%%%                          .info
-%%%                               .
-%%%                               .
-%%%                               .
-%%%                               .
-%%%                               .
-%%%                               .
-%%%                               .
+%%%                          .d_V:                 SCALAR [1x1] = impulso frenata su Urano [km/s]
+%%%                          .delta_t:             SCALAR [1x1] = tempo di volo [s]
+%%%                          .ok:                  BOOL         = esito
+%%%                          .status_msg:          STRING       = diagnostica
+%%%                          .info:                STRUCT [1x1] = info orbita
+%%%                               .a:              SCALAR [1x1] = semiasse maggiore [km]
+%%%                               .e:              SCALAR [1x1] = eccentricità
+%%%                               .F_SOI:          SCALAR [1x1] = anomalia iperbolica al raggio della SOI [rad]
+%%%                               .nH:             SCALAR [1x1] = anomalia media iperbolica [rad/s]
+%%%                               .v_p:            SCALAR [1x1] = velocità al pericentro iperbole [km/s]
+%%%                               .v_c:            SCALAR [1x1] = velocità circolare orbita target [km/s]
+%%%                               .r_SOI:          SCALAR [1x1] = raggio SOI [km]
 
-
-Vp_Terra = sqrt( gm_Terra / rp_Terra ); % [km/s]
+% velocità SC in orbita LEO [km/s]
+Vp_Terra = sqrt( gm_Terra / rp_Terra ); 
+% inizializzazione variabile di progetto dV_Terra [km/s]
 [dV_Terra] = dV_setter(d_Terra,d_Urano,gm_Sole,gm_Terra,rp_Terra,Vp_Terra,k1,k12,dV_step);
 
 % inizializzazione variabili di costo 

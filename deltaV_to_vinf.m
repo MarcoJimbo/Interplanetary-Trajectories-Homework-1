@@ -1,26 +1,36 @@
 function [v_inf, delta_t, ok, status_msg, info] = deltaV_to_vinf(delta_V, r_p, mu_E, r_SOI_E)
-% Converte un impulso tangenziale applicato in LEO in v_inf eliocentrico
-% planetocentrico (rispetto alla Terra) e calcola il TEMPO di volo dal
-% pericentro (punto di applicazione dell'impulso) fino alla frontiera
-% della SOI terrestre lungo la traiettoria di uscita.
-%
-% INPUT
-%   delta_V   [km/s]   impulso tangenziale su orbita LEO (>=0 per fuga)
-%   h_LEO     [km]     quota LEO
-%   R_E       [km]     raggio terrestre
-%   mu_E      [km^3/s^2] mu_Terra
-%   r_SOI_E   [km]     raggio della SOI terrestre (centrata sulla Terra)
-%
-% OUTPUT
-%   v_inf     [km/s]   velocità di eccesso iperbolico (>=0)
-%   delta_t   [s]      tempo per raggiungere la SOI (pericentro -> SOI)
-%   ok        [bool]   esito
-%   status_msg[string] diagnostica
-%   info      [struct] parametri utili (v_c, v_p, v_esc, a, e, F_SOI, ...)
-%
-% NOTE
-% - Se delta_V è insufficiente, ok=false e v_inf=NaN.
-% - Gestisce il caso limite PARABOLICO (v_inf ~ 0) con la formula di Barker.
+%%% Converte un impulso tangenziale applicato in LEO in v_inf eliocentrico
+%%% planetocentrico (rispetto alla Terra) e calcola il TEMPO di volo dal
+%%% pericentro (punto di applicazione dell'impulso) fino alla frontiera
+%%% della SOI terrestre lungo la traiettoria di uscita.
+
+%%% INPUT
+%%%   delta_V:        SCALAR [1x1] = impulso tangenziale su orbita LEO (>=0 per fuga) [km/s]   
+%%%   h_LEO:          SCALAR [1x1] = quota LEO [km]
+%%%   R_E:            SCALAR [1x1] = raggio terrestre [km]
+%%%   mu_E:           SCALAR [1x1] = mu_Terra [km^3/s^2]
+%%%   r_SOI_E:        SCALAR [1x1] = raggio della SOI terrestre (centrata sulla Terra) [km]     
+
+%%% OUTPUT
+%%%   v_inf:          SCALAR [1x1] = velocità di eccesso iperbolico (>=0) [km/s]   
+%%%   delta_t:        SCALAR [1x1] = tempo per raggiungere la SOI (pericentro -> SOI) [s]      
+%%%   ok:             BOOL         = esito
+%%%   status_msg:     STRING       = diagnostica
+%%%   info:           STRUCT       = info orbita
+%%%       .branch:    STRING       = conic
+%%%       .r_p:       SCALAR [1x1] = raggio al pericentro [km]
+%%%       .v_c:       SCALAR [1x1] = velocità LEO [km/s]
+%%%       .v_p:       SCALAR [1x1] = velocità dopo impulso [km/s]
+%%%       .v_esc:     SCALAR [1x1] = velocità di fuga parabolica [km/s]
+%%%       .a:         SCALAR [1x1] = semi asse maggiore [km]
+%%%       .e:         SCALAR [1x1] = eccentricità
+%%%       .F_SOI:     SCALAR [1x1] = anomalia iperbolica al raggio della SOI [rad]
+%%%       .nH:        SCALAR [1x1] = anomalia media iperbolica [rad/s]
+%%%       .r_SOI:     SCALAR [1x1] = raggio SOI [km]
+
+%%% NOTE
+%%% - Se delta_V è insufficiente, ok=false e v_inf=NaN.
+%%% - Gestisce il caso limite PARABOLICO (v_inf ~ 0) con la formula di Barker.
 
 ok = true; status_msg = "ok";
 v_inf = NaN; delta_t = NaN; info = struct();
