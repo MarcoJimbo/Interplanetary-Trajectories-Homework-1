@@ -1,4 +1,4 @@
-function[SOLUZIONE] = TERRA_URANO(d_Terra,d_Urano,gm_Terra,gm_Urano,gm_Sole,SOI_Terra,SOI_Urano,v_Terra,v_Urano,rp_Terra,rp_Urano,E_Terra_0,E_Urano_0,ET_t0,k1,k12,dV_step)
+function[SOLUZIONE] = TERRA_URANO(d_Terra,d_Urano,gm_Terra,gm_Urano,gm_Sole,SOI_Terra,SOI_Urano,v_Terra,v_Urano,rp_Terra,rp_Urano,E_Terra_0,E_Urano_0,ET_t0,dV_Terra)
 %%% funzione che studia performance trasferta diretta TERRA URANO al variare della
 %%% variabile di progetto dV_Terra (impulso erogato da orbita LEO).
 
@@ -77,10 +77,6 @@ function[SOLUZIONE] = TERRA_URANO(d_Terra,d_Urano,gm_Terra,gm_Urano,gm_Sole,SOI_
 %%%                               .v_c:            SCALAR [1x1] = velocità circolare orbita target [km/s]
 %%%                               .r_SOI:          SCALAR [1x1] = raggio SOI [km]
 
-% velocità SC in orbita LEO [km/s]
-Vp_Terra = sqrt( gm_Terra / rp_Terra ); 
-% inizializzazione variabile di progetto dV_Terra [km/s]
-[dV_Terra] = dV_setter(d_Terra,d_Urano,gm_Sole,gm_Terra,rp_Terra,Vp_Terra,k1,k12,dV_step);
 
 % inizializzazione variabili di costo 
 dV_tot = NaN(1,length(dV_Terra));
@@ -88,7 +84,7 @@ t_durata = zeros(size(dV_tot));
 UTC_departure = strings(size(dV_tot));
 UTC_arrival = strings(size(dV_tot));
 
-% determinazione velocità di eccesso iperbolica in entrata SOI Urano [km/s]
+
 % inizializzazione
 SOLUZIONE = cell(1,length(dV_tot)); % cella contenente tutte le caratteristiche della missione 
 v_inf = zeros(size(dV_tot)); % [km/s] velocità di eccesso iperbolico in entrata SOI Urano
@@ -148,7 +144,15 @@ for i = 1:size(dV_tot,2)
         % determinazione durata missione
         t_durata(1,i) = (Earth_exit{i}.delta_t + X_SC_f{i}.delta_t + Uranus_approach{i}.delta_t) / 86400; % [days] durata della missione
         % determinazione prima finestra utile missione
-        t_wait = ( wrapTo2Pi( X_SC_f{i}.theta_t_2 - E_Urano_0 + E_Terra_0 - ( v_Urano / d_Urano - v_Terra / d_Terra ) * Earth_exit{i}.delta_t - ( v_Urano / d_Urano ) * X_SC_f{i}.delta_t ) ) / ( v_Urano / d_Urano ); % [s] tempo che è necessario aspettare per partenza missione
+        w_U = v_Urano / d_Urano; % [rad/s]
+        w_T = v_Terra / d_Terra; % [rad/s]
+        % inizializzazione ciclo while 
+        k = 0;
+        t_wait = -1;
+        while t_wait < 0
+        t_wait = ( E_Terra_0 - E_Urano_0 - w_U * Earth_exit{i}.delta_t - w_U * X_SC_f{i}.delta_t + w_T * Earth_exit{i}.delta_t + thetat2 ) / ( w_U - w_T ) + ( 2 * k * pi ) / abs( w_U - w_T ); % [s] tempo che è necessario aspettare per partenza missione
+        k = k + 1;
+        end
         Et_dep = ET_t0 + t_wait; % partenza in ET
         UTC_departure{i} = cspice_et2utc(Et_dep,'C',2); % partenza in UTC
         Et_arrival = Et_dep + X_SC_f{i}.delta_t + Uranus_approach{i}.delta_t; % arrivo su orbita target in ET

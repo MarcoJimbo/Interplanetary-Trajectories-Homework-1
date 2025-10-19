@@ -34,17 +34,22 @@ h_LEO = 1000; % [km] quota orbita LEO circolare di partenza DISCLAIMER da scegli
 % definizione orbita target intorno Urano
 h_target = 50000; % [km] quota orbita circolare target DISCLAIMER da scegliere
 
-% definizione range di variabili di progetto (dV) , (r_p) 
-% come dV_min viene scelto impulso che comporta trasferta alla Hohmann 
-% (se il livello energetico non è già sufficiente dopo flyby) Se invece
-% il livello energetico è gia sufficiente dopo flyby dV_min viene scelto
-% nullo e dV_max = k12 [km/s]
-% come r_p_min viene scelta R_pianeta + h_atmosfera (quota in cui finisce atmosfera)
-k1 = 2; % costante moltiplicativa che definisce dV_max = k1 * dV_min
-k12 = 5; % [km/s] impulso massimo erogato al powered flyby se con dV=0 si raggiunge prossimo pianeta di missione
-dV_step = 0.1; % [km/s] risoluzione di variabile di progetto dV
-k2 = 5; % costante moltiplicativa che definisce r_p_max = k2 * r_p_min
-r_p_step = 10; % [km] risoluzione di variabile di progetto r_p
+%% Definizione range di variabili di progetto (dV_Terra), (dV) , (r_p) 
+
+% dV_Terra
+% dV_Terra_min = impulso che comporta trasferta alla Hohmann 
+k1 = 2; % costante moltiplicativa che definisce dV_Terra_max = k1 * dV_Terra_min
+% dV [km/s] si genera un vettore con step fisso
+dV_min = 0;
+dV_max = 0; 
+dV_step = 0.01; % [km/s] risoluzione di variabile di progetto dV
+% r_p [km]  si genera un vettore con step piu denso a quote basse
+% r_p_min = R_pianeta + h_atm_pianeta (quota in cui finisce atmosfera densa)
+% r_p_step1_pianeta
+% r_p_int = R_pianeta + h_int
+% r_p_step2_pianeta
+% r_p_max = k2_pianeta * R_pianeta
+
 
 
 %% estrazione dati kernels su pianeti e lune oggetto di missione
@@ -125,12 +130,12 @@ elts_Giove_0 = cspice_oscltx(x_Giove_0,ET_t0,gm_Sole);
 elts_Saturno_0 = cspice_oscltx(x_Saturno_0,ET_t0,gm_Sole);
 elts_Urano_0 = cspice_oscltx(x_Urano_0,ET_t0,gm_Sole);
 %2) trasformazione true anomaly in eccentric anomaly [rad]
-E_Venere_0 = 2*atan( sqrt(1-elts_Venere_0(2)^2) / (1+elts_Venere_0(2)) * tan(elts_Venere_0(9) / 2) );
-E_Terra_0 = 2*atan( sqrt(1-elts_Terra_0(2)^2) / (1+elts_Terra_0(2)) * tan(elts_Terra_0(9) / 2) );
-E_Marte_0 = 2*atan( sqrt(1-elts_Marte_0(2)^2) / (1+elts_Marte_0(2)) * tan(elts_Marte_0(9) / 2) );
-E_Giove_0 = 2*atan( sqrt(1-elts_Giove_0(2)^2) / (1+elts_Giove_0(2)) * tan(elts_Giove_0(9) / 2) );
-E_Saturno_0 = 2*atan( sqrt(1-elts_Saturno_0(2)^2) / (1+elts_Saturno_0(2)) * tan(elts_Saturno_0(9) / 2) );
-E_Urano_0 = 2*atan( sqrt(1-elts_Urano_0(2)^2) / (1+elts_Urano_0(2)) * tan(elts_Urano_0(9) / 2) );
+E_Venere_0 = wrapTo2Pi( 2*atan( sqrt(1-elts_Venere_0(2)^2) / (1+elts_Venere_0(2)) * tan(elts_Venere_0(9) / 2) ) );
+E_Terra_0 = wrapTo2Pi( 2*atan( sqrt(1-elts_Terra_0(2)^2) / (1+elts_Terra_0(2)) * tan(elts_Terra_0(9) / 2) ) );
+E_Marte_0 = wrapTo2Pi( 2*atan( sqrt(1-elts_Marte_0(2)^2) / (1+elts_Marte_0(2)) * tan(elts_Marte_0(9) / 2) ) );
+E_Giove_0 = wrapTo2Pi( 2*atan( sqrt(1-elts_Giove_0(2)^2) / (1+elts_Giove_0(2)) * tan(elts_Giove_0(9) / 2) ) );
+E_Saturno_0 = wrapTo2Pi( 2*atan( sqrt(1-elts_Saturno_0(2)^2) / (1+elts_Saturno_0(2)) * tan(elts_Saturno_0(9) / 2) ) );
+E_Urano_0 = wrapTo2Pi( 2*atan( sqrt(1-elts_Urano_0(2)^2) / (1+elts_Urano_0(2)) * tan(elts_Urano_0(9) / 2) ) );
 
 %% determinazione raggi di orbite circolari di partenza e target [km]
 
@@ -138,26 +143,97 @@ rp_Terra = R_Terra + h_LEO;
 rp_Urano = R_Urano + h_target; 
 
 %% PRIMA PROPOSTA 
-% Terra-->Urano (dV_Terra unica variabile di progetto)
+% Terra-->Urano (dV_Terra) variabile di progetto
 
-[SOLUZIONE_Terra_Urano] = TERRA_URANO(d_Terra,d_Urano,gm_Terra,gm_Urano,gm_Sole,SOI_Terra,SOI_Urano,v_Terra,v_Urano,rp_Terra,rp_Urano,E_Terra_0,E_Urano_0,ET_t0,k1,k12,dV_step);
+% velocità SC in orbita LEO [km/s]
+Vp_Terra = sqrt( gm_Terra / rp_Terra ); 
+% inizializzazione variabili di progetto 
+% dV_Terra [km/s]
+[dV_Terra] = dV_setter(d_Terra,d_Urano,gm_Sole,gm_Terra,rp_Terra,Vp_Terra,k1,dV_max,dV_step);
+
+% soluzioni prima proposta
+[SOLUZIONE_T_U] = TERRA_URANO(d_Terra,d_Urano,gm_Terra,gm_Urano,gm_Sole,SOI_Terra,SOI_Urano,v_Terra,v_Urano,rp_Terra,rp_Urano,E_Terra_0,E_Urano_0,ET_t0,dV_Terra);
+
+%%% SOLUZIONE:                                     CELL   [1xn] of struct of possible solutions performances
+%%%          .d_V_tot:                             SCALAR [1x1] = impulso totale missione [km/s]
+%%%          .data_0:                              STRING       = data di lancio (calendario)
+%%%          .data_f:                              STRING       = data di arrivo (calendario)
+%%%          .Earth_Exit:                          STRUCT [1x1] = info orbita di fuga Terra
+%%%                     .dV_terra:                 SCALAR [1x1] = impulso erogato su LEO [km/s]
+%%%                     .v_inf_T:                  SCALAR [1x1] = velocità di eccesso iperbolico [km/s]
+%%%                     .delta_t:                  SCALAR [1x1] = tempo di volo [s]
+%%%                     .ok:                       BOOL         = esito fuga
+%%%                     .status_msg:               STRING       = diagnostica
+%%%                     .info:                     STRUCT [1x1] = info orbita
+%%%                          .branch:              STRING       = conic
+%%%                          .r_p:                 SCALAR [1x1] = raggio al pericentro [km]
+%%%                          .v_c:                 SCALAR [1x1] = velocità LEO [km/s]
+%%%                          .v_p:                 SCALAR [1x1] = velocità dopo impulso [km/s]
+%%%                          .v_esc:               SCALAR [1x1] = velocità di fuga parabolica [km/s]
+%%%                          .a:                   SCALAR [1x1] = semi asse maggiore [km]
+%%%                          .e:                   SCALAR [1x1] = eccentricità
+%%%                          .F_SOI:               SCALAR [1x1] = anomalia iperbolica al raggio della SOI [rad]
+%%%                          .nH:                  SCALAR [1x1] = anomalia media iperbolica [rad/s]
+%%%                          .r_SOI:               SCALAR [1x1] = raggio SOI [km]
+%%%          .Int_Transfer
+%%%                       .r:                      DOUBLE [1x3] = posizione SC ad encounter Urano wrt s.d.r. {O} [km]
+%%%                       .v:                      DOUBLE [1x3] = velocità SC ad encounter Urano wrt s.d.r {O} [km/s]
+%%%                       .theta_t_2:              SCALAR [1x1] = anomalia totale ad encounter wrt s.d.r {O} [rad]
+%%%                       .delta_t:                SCALAR [1x1] = tempo di volo [s]
+%%%                       .ok:                     BOOL         = esito
+%%%                       .status_msg:             STRING       = diagnostica
+%%%                       .info                    STRUCT [1x1] = info orbita interplanetaria
+%%%                            .conic:             STRING       = conic type
+%%%                            .e:                 SCALAR [1x1] = eccentricità
+%%%                            .p:                 SCALAR [1x1] = semilato retto [km]
+%%%                            .a:                 SCALAR [1x1] = semiasse maggiore [km]
+%%%                            .rp:                SCALAR [1x1] = raggio al pericentro [km]
+%%%                            .ra:                SCALAR [1x1] = raggio all'apocentro [km]
+%%%                            .i:                 SCALAR [1x1] = inclinazione [rad]
+%%%                            .theta1:            SCALAR [1x1] = anomalia vera iniziale [rad]
+%%%                            .theta2:            SCALAR [1x1] = anomalia vera encounter [rad]
+%%%                            .branch:            STRING       = direzione trasferta
+%%%                            .rf_chk:            SCALAR [1x1] = check rf raggiunto [km]
+%%%                            .delta_t:           SCALAR [1x1] = tempo di volo [s]
+%%%          .Uranus_Entrance
+%%%                          .d_V:                 SCALAR [1x1] = impulso frenata su Urano [km/s]
+%%%                          .delta_t:             SCALAR [1x1] = tempo di volo [s]
+%%%                          .ok:                  BOOL         = esito
+%%%                          .status_msg:          STRING       = diagnostica
+%%%                          .info:                STRUCT [1x1] = info orbita
+%%%                               .a:              SCALAR [1x1] = semiasse maggiore [km]
+%%%                               .e:              SCALAR [1x1] = eccentricità
+%%%                               .F_SOI:          SCALAR [1x1] = anomalia iperbolica al raggio della SOI [rad]
+%%%                               .nH:             SCALAR [1x1] = anomalia media iperbolica [rad/s]
+%%%                               .v_p:            SCALAR [1x1] = velocità al pericentro iperbole [km/s]
+%%%                               .v_c:            SCALAR [1x1] = velocità circolare orbita target [km/s]
+%%%                               .r_SOI:          SCALAR [1x1] = raggio SOI [km]
 
 %% SECONDA PROPOSTA
-% Terra-->Marte-->Urano
-
-
-%% TERZA PROPOSTA
-% Terra-->Giove-->Urano
-
-%% QUARTA PROPOSTA
-% Terra-->Saturno-->Urano
-
-%% QUINTA PROPOSTA
 % Terra-->Marte-->Giove-->Urano
+% (dV_Terra,dV_Marte,rp_Marte,dV_Giove,rp_Giove) variabili di progetto
 
-%% SESTA PROPOSTA
-% Terra-->Marte-->Saturno-->Urano
+% inizializzazione variabili di progetto
+% dV_Terra [km/s]
+[dV_Terra] = dV_setter(d_Terra,d_Marte,gm_Sole,gm_Terra,rp_Terra,Vp_Terra,k1,dV_max,dV_step);
+% dV [km/s]
+dV = dV_min:dV_step:dV_max;
+% r_p [km]
+h_atm_Marte = 200; % quota atmosfera [km] DA CAMBIARE
+h_int_Marte = 2000; % [km] quota intermedia
+k2_Marte = 4;
+r_p_step_Marte1 = 200;
+r_p_step_Marte2 = 1000;
+h_atm_Giove = 4000; % quota atmosfera Giove [km] DA CAMBIARE
+h_int_Giove = R_Giove;
+k2_Giove = 20;
+r_p_step_Giove1 = 0.2 * R_Giove;
+r_p_step_Giove2 = 0.5 * R_Giove;
+r_p_Marte = unique([R_Marte + h_atm_Marte : r_p_step_Marte1 : R_Marte + h_int_Marte , R_Marte + h_int_Marte : r_p_step_Marte2 : R_Marte * k2_Marte]) ;
+r_p_Giove = unique([R_Giove + h_atm_Giove : r_p_step_Giove1 : R_Giove + h_int_Giove , R_Giove + h_int_Giove : r_p_step_Giove2 : R_Giove * k2_Giove]) ;
 
-%% SETTIMA PROPOSTA
-% Terra-->Venere-->Terra-->Urano
 
+[SOLUZIONE_T_M_G_U] = TERRA_MARTE_GIOVE_URANO(d_Terra,d_Marte,d_Giove,d_Urano,gm_Terra,gm_Marte,gm_Giove,gm_Urano,gm_Sole,SOI_Terra,SOI_Marte,SOI_Giove,SOI_Urano,v_Terra,v_Marte,v_Giove,v_Urano,rp_Terra,rp_Urano,E_Terra_0,E_Marte_0,E_Giove_0,E_Urano_0,ET_t0,dV_Terra,dV,r_p_Marte,r_p_Giove);
+[best_soluzione, idx] = pick_best_solution(SOLUZIONE_T_M_G_U);
+disp(best_soluzione)    % la struct della cella migliore
+disp(idx)               % indici cella migliore

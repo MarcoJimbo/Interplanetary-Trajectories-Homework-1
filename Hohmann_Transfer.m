@@ -35,4 +35,4 @@ else
     error('Pianeta di partenza e pianeta target devono avere orbite circolari di raggio diverso tra loro')
 end
 % durata transferta
-t_durata = 1/2 * pi * sqrt( ( (r_i+r_f) / 2 )^3 / GM );
+t_durata =  pi * sqrt( ( (r_i+r_f) / 2 )^3 / GM );
