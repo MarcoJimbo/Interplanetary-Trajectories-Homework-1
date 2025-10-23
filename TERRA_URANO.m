@@ -1,4 +1,4 @@
-function[SOLUZIONE] = TERRA_URANO(d_Terra,d_Urano,gm_Terra,gm_Urano,gm_Sole,SOI_Terra,SOI_Urano,v_Terra,v_Urano,rp_Terra,rp_Urano,E_Terra_0,E_Urano_0,ET_t0,dV_Terra)
+function[SOLUZIONE] = TERRA_URANO(d_Terra,d_Urano,gm_Terra,gm_Urano,gm_Sole,SOI_Terra,SOI_Urano,v_Terra,v_Urano,rp_Terra,rp_Urano,E_Terra_0,E_Urano_0,ET_t0,dV_Terra,e_capture)
 %%% funzione che studia performance trasferta diretta TERRA URANO al variare della
 %%% variabile di progetto dV_Terra (impulso erogato da orbita LEO).
 
@@ -131,7 +131,7 @@ for i = 1:size(dV_tot,2)
     % scalare velocità di eccesso iperbolico Sc in entrata SOI Urano [km/s]
     v_inf(1,i) = norm( v_SC_f{i} - v_Urano_f{i} );
     % determinazione impulso frenata al pericentro orbita iperbolica Urano [km/s]
-    [d_V,delta_t,ok,status_msg,info] = Uranus_capture(v_inf(1,i),rp_Urano,gm_Urano,SOI_Urano);
+    [d_V,delta_t,ok,status_msg,info] = Uranus_capture(v_inf(1,i),rp_Urano,gm_Urano,SOI_Urano,e_capture);
     Uranus_approach{i} = struct(...
         'd_V',        d_V,...            % [km/s] impulso erogato per frenata
         'delta_t',    delta_t,...        % [s] tempo di volo orbita iperbolica di approccio

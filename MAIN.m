@@ -31,9 +31,6 @@ ET_t0 = cspice_str2et(UTC_t0); % t0 in ET
 % definizione orbita LEO di partenza
 h_LEO = 1000; % [km] quota orbita LEO circolare di partenza DISCLAIMER da scegliere 
 
-% definizione orbita target intorno Urano
-h_target = 50000; % [km] quota orbita circolare target DISCLAIMER da scegliere
-
 %% Definizione range di variabili di progetto (dV_Terra), (dV) , (r_p) 
 
 % dV_Terra
@@ -108,6 +105,12 @@ v_Giove = sqrt(gm_Sole/d_Giove);
 v_Saturno = sqrt(gm_Sole/d_Saturno);
 v_Urano = sqrt(gm_Sole/d_Urano);
 
+% definizione orbita target intorno Urano
+h_target = 0.2*R_Urano; % [km] quota orbita circolare target DISCLAIMER da scegliere
+
+% definizione eccentricità di cattura
+e_capture = (60-1.2)/(60+1.2);
+
 %% determinazione condizioni iniziali
 
 % estrazione stato vettore dei pianeti al tempo t0 in J2000 centrato in Sole [km , km/s]
@@ -152,7 +155,7 @@ Vp_Terra = sqrt( gm_Terra / rp_Terra );
 [dV_Terra] = dV_setter(d_Terra,d_Urano,gm_Sole,gm_Terra,rp_Terra,Vp_Terra,k1,dV_max,dV_step);
 
 % soluzioni prima proposta
-[SOLUZIONE_T_U] = TERRA_URANO(d_Terra,d_Urano,gm_Terra,gm_Urano,gm_Sole,SOI_Terra,SOI_Urano,v_Terra,v_Urano,rp_Terra,rp_Urano,E_Terra_0,E_Urano_0,ET_t0,dV_Terra);
+[SOLUZIONE_T_U] = TERRA_URANO(d_Terra,d_Urano,gm_Terra,gm_Urano,gm_Sole,SOI_Terra,SOI_Urano,v_Terra,v_Urano,rp_Terra,rp_Urano,E_Terra_0,E_Urano_0,ET_t0,dV_Terra,e_capture);
 
 %%% SOLUZIONE:                                     CELL   [1xn] of struct of possible solutions performances
 %%%          .d_V_tot:                             SCALAR [1x1] = impulso totale missione [km/s]
@@ -232,8 +235,19 @@ r_p_step_Giove2 = 0.5 * R_Giove;
 r_p_Marte = unique([R_Marte + h_atm_Marte : r_p_step_Marte1 : R_Marte + h_int_Marte , R_Marte + h_int_Marte : r_p_step_Marte2 : R_Marte * k2_Marte]) ;
 r_p_Giove = unique([R_Giove + h_atm_Giove : r_p_step_Giove1 : R_Giove + h_int_Giove , R_Giove + h_int_Giove : r_p_step_Giove2 : R_Giove * k2_Giove]) ;
 
-
-[SOLUZIONE_T_M_G_U] = TERRA_MARTE_GIOVE_URANO(d_Terra,d_Marte,d_Giove,d_Urano,gm_Terra,gm_Marte,gm_Giove,gm_Urano,gm_Sole,SOI_Terra,SOI_Marte,SOI_Giove,SOI_Urano,v_Terra,v_Marte,v_Giove,v_Urano,rp_Terra,rp_Urano,E_Terra_0,E_Marte_0,E_Giove_0,E_Urano_0,ET_t0,dV_Terra,dV,r_p_Marte,r_p_Giove);
+[SOLUZIONE_T_M_G_U] = TERRA_MARTE_GIOVE_URANO(d_Terra,d_Marte,d_Giove,d_Urano,gm_Terra,gm_Marte,gm_Giove,gm_Urano,gm_Sole,SOI_Terra,SOI_Marte,SOI_Giove,SOI_Urano,v_Terra,v_Marte,v_Giove,v_Urano,rp_Terra,rp_Urano,E_Terra_0,E_Marte_0,E_Giove_0,E_Urano_0,ET_t0,dV_Terra,dV,r_p_Marte,r_p_Giove,e_capture);
 [best_soluzione, idx] = pick_best_solution(SOLUZIONE_T_M_G_U);
+
 disp(best_soluzione)    % la struct della cella migliore
 disp(idx)               % indici cella migliore
+
+%Calcolo dV per cambio di inclinazione
+%Dati eventuale orbita chiusa su urano, manovra posta all'apocentro
+Delta_i=7.777; %[deg]
+AOP=0; %deg
+True_anomaly=180;
+semimajor=(1.2*R_Urano)/(1-e_capture);
+mean_motion=sqrt(gm_Urano/semimajor^3);
+%Formula dV_i 
+dV_inclination=2*sind(Delta_i/2)*semimajor*mean_motion*(1+e_capture*cosd(True_anomaly))/(sqrt(1-e_capture^2)*cosd(AOP+True_anomaly));
+fprintf('The total dV to close and incline the orbit is %2.4f [km/s]. \nThe inclination manouver uses an impulse of %4.1f [m/s].\n',abs(dV_inclination)+best_soluzione.d_V_tot,abs(dV_inclination)*1000)

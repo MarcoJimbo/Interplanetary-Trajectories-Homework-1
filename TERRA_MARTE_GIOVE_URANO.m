@@ -1,4 +1,4 @@
-function[SOLUZIONE] = TERRA_MARTE_GIOVE_URANO(d_Terra,d_Marte,d_Giove,d_Urano,gm_Terra,gm_Marte,gm_Giove,gm_Urano,gm_Sole,SOI_Terra,SOI_Marte,SOI_Giove,SOI_Urano,v_Terra,v_Marte,v_Giove,v_Urano,rp_Terra,rp_Urano,E_Terra_0,E_Marte_0,E_Giove_0,E_Urano_0,ET_t0,dV_Terra,dV,r_p_Marte,r_p_Giove)
+function[SOLUZIONE] = TERRA_MARTE_GIOVE_URANO(d_Terra,d_Marte,d_Giove,d_Urano,gm_Terra,gm_Marte,gm_Giove,gm_Urano,gm_Sole,SOI_Terra,SOI_Marte,SOI_Giove,SOI_Urano,v_Terra,v_Marte,v_Giove,v_Urano,rp_Terra,rp_Urano,E_Terra_0,E_Marte_0,E_Giove_0,E_Urano_0,ET_t0,dV_Terra,dV,r_p_Marte,r_p_Giove,e_capture)
 %%% funzione che studia performance trasferta diretta TERRA URANO al variare della
 %%% variabile di progetto dV_Terra (impulso erogato da orbita LEO).
 
@@ -20,6 +20,7 @@ function[SOLUZIONE] = TERRA_MARTE_GIOVE_URANO(d_Terra,d_Marte,d_Giove,d_Urano,gm
 %%% k1:              SCALAR [1x1] = costante moltiplicativa che definisce dV_max = k1 * dV_min
 %%% k12:             SCALAR [1x1] = dV_max se con dV=0 si raggiunge prossimo pianeta di missione [km/s]
 %%% dV_step:         SCALAR [1x1] = risoluzione di variabile di progetto dV [km/s]
+%%% e_capture        SCALAR [1x1] = Eccentricità di cattura.(calcolata sapendo rp e ra finali.)
 
 %%% OUTPUT:
 %%% SOLUZIONE:                                     CELL   [1xn] of struct of possible solutions performances
@@ -213,7 +214,7 @@ for i = 1:size(dV_tot,1) % variazione di dV_Terra
                     norm_v_inf_U = norm(v_inf_U);
 
                     % determinazione impulso frenata al pericentro orbita iperbolica Urano [km/s]
-                    [d_V,delta_t,ok,status_msg,info] = Uranus_capture(norm_v_inf_U,rp_Urano,gm_Urano,SOI_Urano);
+                    [d_V,delta_t,ok,status_msg,info] = Uranus_capture(norm_v_inf_U,rp_Urano,gm_Urano,SOI_Urano,e_capture);
                     Uranus_approach{i,j,l,k,m} = struct(...
                     'd_V',        d_V,...            % [km/s] impulso erogato per frenata
                     'delta_t',    delta_t,...        % [s] tempo di volo orbita iperbolica di approccio

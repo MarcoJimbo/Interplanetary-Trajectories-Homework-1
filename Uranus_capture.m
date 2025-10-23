@@ -1,4 +1,4 @@
-function [d_V, delta_t, ok, status_msg, info] = Uranus_capture(v_inf, r_p, gm_Urano, r_SOI)
+function [d_V, delta_t, ok, status_msg, info] = Uranus_capture(v_inf, r_p, gm_Urano, r_SOI,e_capture)
 %%% Calcola l'impulso al pericentro per circolarizzare a r_p e il tempo
 %%% di volo dalla frontiera della SOI di Urano al pericentro lungo
 %%% l'iperbola di approccio.
@@ -8,6 +8,7 @@ function [d_V, delta_t, ok, status_msg, info] = Uranus_capture(v_inf, r_p, gm_Ur
 %%% 2)  r_p = [km] raggio al pericentro dell'iperbola
 %%% 3)  gm_Urano = [km^3/s^2] parametro gravitazionale di Urano
 %%% 4)  r_SOI = [km] raggio della sfera di influenza (centro Urano)
+%%% 5)  e_capture = Eccentricità di cattura.(calcolata sapendo rp e ra finali.)
 
 %%% OUTPUT:
 %%% 1) d_V = [km/s] impulso al pericentro per ottenere orbita circolare a r_p (valore negativo: frenata)
@@ -39,8 +40,9 @@ e = 1 + (r_p * v_inf^2) / mu;   % e > 1
 % velocità al pericentro [km/s]
 v_p = sqrt( v_inf^2 + 2*mu/r_p );
 
+
 % impulso per circolarizzare a r_p (stessa quota) [km/s]
-v_circ = sqrt(mu / r_p);
+v_circ = sqrt(mu*(1+e_capture) / r_p);
 d_V = v_circ - v_p;     % negativo: frenata
 
 % anomalia iperbolica alla SOI (ramo positivo; inbound/outbound hanno |F| uguale) [rad]
