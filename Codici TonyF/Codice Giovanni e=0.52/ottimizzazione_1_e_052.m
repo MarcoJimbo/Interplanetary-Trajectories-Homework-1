@@ -1,0 +1,253 @@
+%% OTTIMIZZAZIONE
+clc
+clear all
+close all
+
+%% Dati
+global gamma_max W
+% gamma_max = 3.2620e-6;   %%% -----> devo definire il mio motore
+gamma_max = 0.8e-5;
+W = gamma_max * 2000; % 1300 kg di m0 
+
+
+mu_ur = 5793939; %[km^3/s^2] parametro gravitazionale saturno
+
+
+r_ur = 51118; %[km] raggio di saturno
+r_umbriel = 259835; %[km] raggio orbita encelado attorno a saturno
+
+R_start = 2*r_ur; %[km] %generalmente tra 1.000 km e 100.000 km sopra la superficie del pianeta, noi decidiamo di arrivare all'esterno della fascia F degli anelli di Saturno che hanno un raggio di 140180km dal centro di Saturno
+e0=0.52;
+a0=R_start/(1-e0);
+ra0=(1+e0)*a0;
+
+%% Vincoli al contorno
+% vincoli iniziali
+r0 = ra0;
+theta0 = pi; 
+vr0 = 0;
+vtheta0 = sqrt(mu_ur/a0*(1-e0)/(1+e0)); 
+
+% vincoli finali
+rf = r_umbriel ; 
+ef=(ra0-rf)/(ra0+rf);
+af=rf/(1-ef);
+vrf = 0;
+vthetaf = sqrt(mu_ur/af*(1+ef)/(1-ef));  %thetaf è unparametro libero
+                         
+
+
+%% Controllo ottimo
+% definisco un vettore delle condizioni iniziali
+X0 = [r0, theta0, vr0, vtheta0, 0]'; %vettore condizioni iniziali da usare in un ode per propagare stato
+
+
+%definisco condizioni inziali associate ai moltiplicatori di lagrange, e le
+%stime iniziali del tempo_finale e del C_f
+% Pr0 = 0.3;
+% Pvr0 = 0.6;
+% Pvtheta0 = 0.8;
+% PC0 = -0.1;  %%questo è il moltiplicatore di lagrange associato all'eq.diff aggiuntiva dello stato
+% t_fin = 29246*5; %%tempo finale stimato con homann(a detta del professore)
+% Cf = 0.0954; %%è cio che voglio minimizzare, devo prendere una stima che sia più accurata possibile (cosi come il tempo)
+
+Pr0 = 0.3;
+Pvr0 = 0.450;
+Pvtheta0 = 0.40946;
+PC0 = -0.5;  %%questo è il moltiplicatore di lagrange associato all'eq.diff aggiuntiva dello stato
+t_fin = 7e5; %%tempo finale stimato con homann(a detta del professore)
+
+%Cf = gamma_max * t_fin;
+Cf = 0.157;
+
+Ptheta0 = 0; %%valore costante, esce dalle eq. di trasversalità, pertanto posso non inserirlo nel vettore first_guess_fmin
+
+
+%definisco quindi il vettore iniziale delle variabili da dare in pasto ad fmin
+first_guess_fmin = [Pr0, Pvr0, Pvtheta0, PC0, t_fin, Cf];
+
+
+A=[];  %% matrici ausiliarie
+B=[];
+Aeq=[];
+Beq=[];
+% LB=[-1.01,-1.01,-1.01,-1.01,25000, 0];
+% UB=[1.01,1.01,1.01,1.01,35000*6, inf];
+
+LB = [-5, -5, -5, -1, 1e5, 0];
+UB = [5, 5, 5, 1, 1e7, inf];
+
+
+%%options fmincon;
+optionsf= optimoptions("fmincon","Algorithm","interior-point","EnableFeasibilityMode",true,"SubproblemAlgorithm","cg",'Display', 'iter');
+
+
+
+%applico fmincon, l'output sol non è nient'altro che il vettore delle
+%quantità fornite in input (first_guess_fmin) ottimizzate grazie proprio
+%all'operatore fmincon
+sol = fmincon(@(X)minCf(X), first_guess_fmin, A, B ,Aeq ,Beq ,LB ,UB, @(X)Vincoli(X), optionsf);
+
+
+
+
+%%%sol mi da in output le variabili ottimali, quello che devo fare è ora
+%%%propagare le mie dynamical eqs
+Pr0 = sol(1);
+Pvr0 = sol(2);
+Pvtheta0 = sol(3);
+PC0 = sol(4);  %%questo è il moltiplicatore di lagrange associato all'eq.diff aggiuntiva dello stato
+t_fin = sol(5); %%tempo finale stimato con hohmann(a detta del professore)
+Cf = sol(6); %%è cio che voglio minimizzare, devo prendere una stima che sia più accurata possibile (cosi come il tempo)
+
+P0 = [Pr0; 0; Pvr0; Pvtheta0; PC0];
+IN = [X0; P0];
+
+
+%ODE options
+Tol0=3e-14;
+Tol1=1e-14;
+options= odeset('RelTol', Tol0, 'AbsTol',Tol1);
+
+[t,integrator_output] = ode113(@(t, state) Dyn_Eqs(t,state),[0, t_fin+3.025e4], IN, options);
+
+r = integrator_output(:,1);
+theta = integrator_output(:,2);
+vr = integrator_output(:,3);
+vr_fin_vera=integrator_output(end,3);
+vtheta = integrator_output(:,4);
+vtheta_fin_vera=integrator_output(end,4);
+Pr = integrator_output(:,6);
+
+Pvr = integrator_output(:,8);
+Pvtheta = integrator_output(:,9);
+PC = integrator_output(:,10);
+
+H_star = [];
+
+CONTROL = [];
+for i = 1:length(t)
+    Pv = [Pvr(i); Pvtheta(i)];
+    Pc = PC(i);
+    if (norm(Pv) + Pc) > 0
+        gamma = gamma_max;
+        CONTROL = [CONTROL, gamma];
+
+    else 
+        gamma = 0;
+        CONTROL = [CONTROL, gamma];
+
+    end
+H = Pr(i) * vr(i) + Pvr(i) * ( (vtheta(i)^2 / r(i) ) - (mu_ur / r(i)^2)) + Pvtheta(i) * (- vtheta(i) * vr(i) / r(i)) + gamma * (norm(Pv) + Pc); %hamilton
+H_star = [H_star; H]; % Store the Hamiltonian values for later analysis 
+
+end
+
+fprintf('vrf %4.2f vrf vera %4.2f vthf %4.2f  vthf vera %4.2f \n',vrf,vr_fin_vera,vthetaf,vtheta_fin_vera)
+
+% Creazione del grafico
+figure;
+plot(t, CONTROL*10^(6), 'b-', 'LineWidth', 2);
+title('Valore del Controllo vs Tempo');
+xlabel('Tempo (s)');
+ylabel('Valore del Controllo (gamma)');
+grid on;
+legend('CONTROL', 'Location', 'Best');
+
+
+figure;
+plot(t, H_star, 'b-', 'LineWidth', 2);
+title('Valore del Hamiltoniana vs Tempo');
+xlabel('Tempo (s)');
+ylabel('Valore Hamiltoniana');
+grid on;
+legend('H', 'Location', 'Best');
+
+
+
+
+%% Calcolo e visualizzazione della traiettoria
+
+alpha = linspace(0, 2*pi, 720);
+% theta_end = theta(end);
+% theta_arrivo_encelado = linspace(0, theta_end, 1000);
+x_plot = r .* cos(theta);
+y_plot = r .* sin(theta);
+
+figure;
+hold on 
+grid on 
+axis equal
+plot(x_plot, y_plot, 'r-', 'LineWidth', 2);
+plot(r_umbriel * cos(alpha), r_umbriel * sin(alpha), 'Color', [0.7 0.2 0], 'LineWidth', 1.2, 'DisplayName', 'Orbita Encelado');
+plot(R_start * cos(alpha), R_start * sin(alpha), 'Color', [0 0.2 0.7], 'LineWidth', 1.2, 'DisplayName', 'Orbita Encelado');
+plot(0, 0, 'yo', 'MarkerFaceColor', 'y', 'MarkerSize', 8, 'DisplayName', 'Saturno');
+
+
+%% angolo radiale - tangenziale
+
+PV = [Pvr, Pvtheta]';
+[m, n] = size(PV);
+
+% D = [];
+DELTA = [];
+
+for i = 1 : n
+    if norm(PV (:, i)) + PC(i) > 0
+        D_opt = PV (:, i) / norm(PV(:,i));
+
+        D = D_opt;
+
+        delta = atan (D(2) / D(1));
+        DELTA = [DELTA, delta];
+
+    else
+        D_opt = [0; 0];
+        delta = 0;
+        DELTA = [DELTA, delta];
+
+    end
+
+
+end
+
+
+% Creazione del grafico
+figure;
+plot(t, rad2deg(DELTA) , 'b-', 'LineWidth', 2);
+title('Valore dell angolo vs Tempo');
+xlabel('Tempo (s)');
+ylabel('Valore dell angolo (delta)');
+grid on;
+legend('DELTA', 'Location', 'Best');
+
+%% grafico velocità
+
+% Creazione del grafico unificato per velocità radiale e tangenziale
+figure; 
+subplot(3,1,1)
+plot(t, vr, 'g-', 'LineWidth', 2);
+title('Velocità Radiale vs Tempo');
+xlabel('Tempo (s)');
+ylabel('Velocità Radiale (vr)');
+grid on;
+legend('vr', 'Location', 'Best');
+
+subplot(3,1,2)
+plot(t, vtheta, 'g-', 'LineWidth', 2);
+title('Velocità Tangenziale vs Tempo');
+xlabel('Tempo (s)');
+ylabel('Velocità Tangenziale (vtheta)');
+grid on;
+legend('vtheta', 'Location', 'Best');
+legend('vr', 'Location', 'Best');
+
+% Correzione del subplot per la velocità in modulo
+modulo = sqrt(vr.^2 + vtheta.^2);
+subplot(3,1,3) % Modificato per avere 3 righe nel subplot
+plot(t, modulo, 'g-', 'LineWidth', 2);
+title('Velocità in Modulo vs Tempo');
+xlabel('Tempo (s)');
+ylabel('Velocità in Modulo (modulo)');
+grid on;
+legend('modulo', 'Location', 'Best');
