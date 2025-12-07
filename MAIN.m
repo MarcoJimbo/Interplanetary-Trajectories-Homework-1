@@ -20,7 +20,7 @@ clc
 format long 
 
 %% caricamento Kernels 
-cspice_furnsh('kernels\mykernels.furnsh' );
+cspice_furnsh('./kernels/mykernels.furnsh');
 
 %% Definizione input di missione
 
@@ -241,13 +241,15 @@ r_p_Giove = unique([R_Giove + h_atm_Giove : r_p_step_Giove1 : R_Giove + h_int_Gi
 disp(best_soluzione)    % la struct della cella migliore
 disp(idx)               % indici cella migliore
 
+%% PLOT
+plot_trajectory_TU_oe(best_soluzione)
 %Calcolo dV per cambio di inclinazione
 %Dati eventuale orbita chiusa su urano, manovra posta all'apocentro
-Delta_i=7.777; %[deg]
-AOP=0; %deg
-True_anomaly=180;
-semimajor=(1.2*R_Urano)/(1-e_capture);
-mean_motion=sqrt(gm_Urano/semimajor^3);
-%Formula dV_i 
-dV_inclination=2*sind(Delta_i/2)*semimajor*mean_motion*(1+e_capture*cosd(True_anomaly))/(sqrt(1-e_capture^2)*cosd(AOP+True_anomaly));
-fprintf('The total dV to close and incline the orbit is %2.4f [km/s]. \nThe inclination manouver uses an impulse of %4.1f [m/s].\n',abs(dV_inclination)+best_soluzione.d_V_tot,abs(dV_inclination)*1000)
+% Delta_i=7.777; %[deg]
+% AOP=0; %deg
+% True_anomaly=180;
+% semimajor=(1.2*R_Urano)/(1-e_capture);
+% mean_motion=sqrt(gm_Urano/semimajor^3);
+% %Formula dV_i 
+% dV_inclination=2*sind(Delta_i/2)*semimajor*mean_motion*(1+e_capture*cosd(True_anomaly))/(sqrt(1-e_capture^2)*cosd(AOP+True_anomaly));
+% fprintf('The total dV to close and incline the orbit is %2.4f [km/s]. \nThe inclination manouver uses an impulse of %4.1f [m/s].\n',abs(dV_inclination)+best_soluzione.d_V_tot,abs(dV_inclination)*1000)
