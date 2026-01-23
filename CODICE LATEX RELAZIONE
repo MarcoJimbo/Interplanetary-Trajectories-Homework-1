@@ -1,0 +1,659 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb}
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{hyperref}
+\newcommand{\uu}[1]{\underline{\underline{#1}}}
+\newcommand{\vect}[1]{\mathbf{#1}}
+\newcommand{\bvect}[1]{\bm{#1}}
+
+\title{\textbf{Group Project Relation: Umbriel Mission Analysis and Optimization}}
+\author{Andrea Mosca}
+
+\begin{document}
+
+\maketitle
+
+\section{Abstract}
+This work provides a preliminary design for a mission towards Umbriel conceived to
+test the efficacy of Optimization Methods. To support the minimization of the fuel consumption we use gravity assists on two planets to reach our final destination. 
+A thorough analysis of the mathematical models was carried out to optimize the effectiveness of the low thrust trajectory phase. The results provide a maneuver lasting 34 days, to bring the spacecraft from an higher radius orbit to Umbriel's circular orbit with minimum $\Delta$V budget.
+\section{Introduction}
+The mission is carried out in two phases:
+\begin{itemize}
+    \item \textbf{The Interplanetary Phase}: We depart from Earth's LEO to reach a HUO (High Uranus Orbit), using two gravity assists from Mars and Jupiter.
+    \item  \textbf{The Low Thrust Trajectory Phase}:We depart from a circular orbit with radius\\ $r_i=466000\,km$ and we arrive at another circular orbit with radius $r_f=R_{Umbriel}$.
+\end{itemize}
+\section{Interplanetary Phase Model}
+\subsection{Approximations}
+We carry out our analysis using some approximations:
+\begin{enumerate}
+    \item We operate in a two dimensional environment.
+    \item We use the patched conics approach. This means that we consider only the Central Body inside of its Sphere of Influence. The definition of SoI is the static one \\$r_{SoI,B}=(\frac{\mu_B}{\mu_{Sun}})^{\frac{2}{5}}\cdot d(B,Sun)$.
+    \item We consider the planets with a constant density. We don't consider Perturbations due to Gravity Gradients.
+    \item We ignore the Ephemeris problem. We consider that the Planets that we reach are present once we arrive at their respective radius.
+    \item We consider a mean distance from the Sun. Most planets have slightly non circular orbits, so we approximate all planet orbits exactly at $e=0$.
+    \item The equatorial plane of Uranus is inclined of 98° w.r.t Ecliptic Plane. As we do all the assists in the Ecliptic Plane, we will consider that after the last gravity assist we impose a perturbation that will make us arrive at the desired radius at the equator of Uranus.
+\end{enumerate}
+\subsection{Finding the Optimal Solution}
+\subsubsection{Variables}
+The variables that we decide to analyze are:
+\begin{itemize}
+    \item The altitude of the LEO orbit.
+    \item The first $\Delta V$ that we impose from the LEO.\\ The range is imposed using Homann transfers. The minimum is the $\Delta V$ needed for a transfer to Mars, the maximum is the one needed for a transfer to Uranus. $\Delta V\in[3.5\,\,;\,8]\frac{km}{s}$
+    \item Any possible $\Delta V$ that we can impose in the pericenter of the fly-by hyperbola of the two assists.
+    We decided an arbitrary value of $\Delta V\in[0\,\,;\,4]\frac{km}{s}$
+    \item The $r_p$ of the hyperbola.\\
+    $h_{p,Mars}\in[200\,\,;\,20000]km$, while $h_{p,Jup}\in[4000\,\,;\,1400000]km$. \\The minimum value refers to the altitude in which the atmosphere is rare enough to ignore possible drag. The maximum is about $\frac{1}{30}$ of the SoI. 
+    \item The radius of the closure orbit around Uranus.
+    \item Eccentricity of the final orbit.
+\end{itemize}
+Using our approximations, all the other quantities are consequent from these.
+
+\subsubsection{Known Constants}
+\begin{table}[h!]
+\renewcommand{\arraystretch}{1.2}
+    \setlength{\tabcolsep}{8pt}
+    \centering
+    \caption{Planetary Constants and Orbital Parameters}
+    \label{tab:costanti_planetarie}
+    \vspace{0.2cm} % Spaziatura tra caption e tabella
+    \resizebox{\textwidth}{!}{% Ridimensiona se la tabella è troppo larga
+    \begin{tabular}{lccccc}
+        \toprule
+        \textbf{Planet} & \textbf{Radius} ($R$) & \textbf{Grav.Param. } ($\mu$) & \textbf{Circ. Orbit Rad.} ($d$) & \textbf{SOI Rad.} & \textbf{Orbital Vel.} ($v$) \\
+         & [km] & [km$^3$/s$^2$] & [km] & [km] & [km/s] \\
+        \midrule
+        \textbf{Earth} & $6\,378$ & $3.986 \times 10^5$ & $1.496 \times 10^8$ & $9.25 \times 10^5$ & $29.78$ \\
+        \textbf{Mars} & $3\,396$ & $4.283 \times 10^4$ & $2.280 \times 10^8$ & $5.77 \times 10^5$ & $24.13$ \\
+        \textbf{Jupiter} & $71\,492$ & $1.267 \times 10^8$ & $7.784 \times 10^8$ & $4.82 \times 10^7$ & $13.06$ \\
+        \textbf{Uranus} & $25\,559$ & $5.794 \times 10^6$ & $2.871 \times 10^9$ & $5.19 \times 10^7$ & $6.80$ \\
+        \bottomrule
+    \end{tabular}
+    }
+\end{table}
+\subsubsection{Mathematical Model 1: From The initial $\Delta V$ to parameters outside Earth's SoI}
+We impose the first variable $h_{LEO}=1000\,km$ so we will have $r_{0,Earth}=R_{Earth}+h_{LEO}$.\\
+
+We find the circular velocity and the pericenter velocity of the new orbit:
+\[
+v_{circ} = \sqrt{\frac{\mu_E}{r_{0,Earth}}}, \quad v_p = v_c + \Delta v
+\]
+
+We compute the hyperbolic excess velocity $v_{\infty}$ knowing $v_{esc}=\sqrt{\frac{2\mu_E}{r_{0,Earth}}}$ :
+
+\[
+v_{\infty} = \sqrt{v_p^2 - v_{esc}^2} = \sqrt{v_p^2 - \frac{2\mu_E}{r_p}}
+\]
+\[
+a = \frac{\mu_E}{v_{\infty}^2}, \quad e = 1 + \frac{r_p v_{\infty}^2}{\mu_E}
+\]
+We compute the flight time to reach the SoI using Hyperbolic Anomaly $H$, where $H_{SoI}$ is the anomaly at $r_{SoI}$.\\
+We use the relation between radius and Hyperbolic Anomaly to find $H_{SoI}$:
+\[
+r_{SOI} = a(e \cosh H_{SOI} - 1) \implies H_{SOI} = \cosh^{-1}\left( \frac{r_{SOI}/a + 1}{e} \right)
+\]
+To find $\Delta t$ we use Kepler's Equation for Hyperbolas:
+\[
+n_H = \sqrt{\mu_E/a^3} \qquad
+\Delta t = \frac{e \sinh H_{SOI} - H_{SOI}}{n_H}
+\]
+This last equation is simplified because our trajectory starts at the pericenter, so $H_0=0$.
+\subsubsection{Mathematical Model 2: Interplanetary Transfer Using Keplerian Dynamics}
+This type of transfer is used between the maneuvers on the planets:
+\begin{itemize}
+    \item Earth $\longrightarrow$ Mars
+    \item Mars $\longrightarrow$ Jupiter
+    \item Jupiter $\longrightarrow$ Uranus
+\end{itemize}
+We will follow a general realization of the steps without treating any specific one.
+\begin{enumerate}
+    \item Starting with position $\mathbf{r}_i$ and velocity $\mathbf{v}_i$ in the Solar System Inertial Frame we compute the orbital parameters.
+    \begin{eqnarray*}
+        r = \|\mathbf{r}_i\|\quad; \quad v = \|\mathbf{v}_i\| \\
+        \mathbf{h} = \mathbf{r}_i \times \mathbf{v}_i \quad\rightarrow \quad h = \|\mathbf{h}\|\\
+        \mathbf{e} = \frac{\mathbf{v}_i \times \mathbf{h}}{\mu} - \frac{\mathbf{r}_i}{r} \quad\rightarrow\quad e=\|\mathbf{e}\|\\
+        p = \frac{h^2}{\mu}\quad; \quad \varepsilon = \frac{v^2}{2} - \frac{\mu}{r}\\
+        a = -\frac{\mu}{2\varepsilon}
+    \end{eqnarray*}
+    \item We asses the type of conic checking e:
+    \begin{itemize}
+    \item Circular: $e \approx 0$
+    \item Elliptic: $0 < e < 1$
+    \item Parabolic: $e \approx 1$
+    \item Hyperbolic: $e > 1$
+\end{itemize}
+We will mostly have an elliptic orbit, unless we surpass the solar system's escape velocity. Which is likely only after Jupiter's gravity assist.
+\item We check whether the final radius $r_f$ is reachable, by analyzing the final true anomaly.
+\begin{equation*}
+    r(\theta_f) = \frac{p}{1 + e \cos (\theta_f)} \qquad \cos (\theta_f) = \frac{1}{e} \left( \frac{p}{r_f} - 1 \right) 
+\end{equation*}
+\begin{itemize}
+    \item If we are in an elliptic orbit we have to check that $\cos (\theta_f)<1$, otherwise we cannot reach it.
+    \item If we are in an Hyperbolic orbit we have to check that $\theta_f<\theta_{max}\rightarrow\cos (\theta_{max})=-\frac{1}{e}$
+\end{itemize}
+\item We compute the $\Delta\theta$. We already know $\theta_f$. To compute $\theta_i$ using:
+\begin{equation*}
+    \theta_i = \operatorname{atan2}\left[ (\mathbf{e} \times \mathbf{r}_i) \cdot \mathbf{h}\quad, \quad \mathbf{e} \cdot \mathbf{r}_i \cdot h \,\right] \quad \rightarrow \quad \Delta \theta = (\theta_f - \theta_i) 
+\end{equation*}
+\item We compute the flight time:
+\begin{itemize}
+    \item \textbf{Elliptic Orbit:}
+    We use Eccentric Anomaly turned into Mean Anomaly to use the Keplerian Equation.
+    \begin{eqnarray*}
+        \tan \left( \frac{E}{2}\right)  = \sqrt{\frac{1-e}{1+e}} \cdot \tan \left(\frac{\theta}{2}\right) \quad \rightarrow \quad
+        M = E - e \sin (E)\\ \\ \Delta t = \frac{M_2 - M_1}{n} \qquad n = \sqrt{\frac{\mu}{a^3}} \hspace{4cm}
+    \end{eqnarray*}
+    \item \textbf{Hyperbolic Orbit:}We use Hyperbolic Anomaly turned into Mean anomaly to use the Keplerian Equation.
+    \begin{eqnarray*}
+        \tanh \left(\frac{H}{2}\right) = \sqrt{\frac{e-1}{e+1}} \tan \left(\frac{\theta}{2}\right) \quad \rightarrow \quad  M = e \sinh (H) - H \\ \\
+        \Delta t = \frac{M_2 - M_1}{n_h}\qquad  n_h = \sqrt{\frac{\mu}{(-a)^3}} \hspace{4cm}
+    \end{eqnarray*}
+\end{itemize}
+\item We reconstruct the vectors in the final time in the inertial reference frame using the peri-focal one. First we construct the rotation matrix:
+\begin{equation*}
+    \uu{\mathbf{R}}_{Perifocal}^{Inertial}=\left[\hat{\mathbf{P}} \; \hat{\mathbf{Q}} \; \hat{\mathbf{W}}\right] \quad \leftarrow \quad
+    \hat{\mathbf{P}} = \frac{\mathbf{e}}{e}, \quad \hat{\mathbf{W}} = \frac{\mathbf{h}}{h}, \quad \hat{\mathbf{Q}} = \hat{\mathbf{W}} \times \hat{\mathbf{P}} 
+\end{equation*}
+The position and velocity vectors in the perifocal frame are:
+\begin{equation*}
+    \mathbf{r}_{Perifocal} = \begin{bmatrix} r_f \cos (\theta_f) \\ r_f \sin (\theta_f) \\ 0 \end{bmatrix}
+    \qquad
+    \mathbf{v}_{Perifocal} =\sqrt{\frac{\mu}{p}}\cdot \begin{bmatrix} -\sin (\theta_f) \\ e+\cos (\theta_f) \\ 0 \end{bmatrix}
+\end{equation*}
+The vectors in the inertial frame are:
+\begin{equation*}
+    \mathbf{r}_f = \uu{\mathbf{R}}_{Perifocal}^{Inertial} \cdot \mathbf{r}_{Perifocal} \qquad \mathbf{v}_f = \uu{\mathbf{R}}_{Perifocal}^{Inertial} \cdot \mathbf{v}_{Perifocal}
+\end{equation*}
+\end{enumerate}
+\subsubsection{Mathematical Model 3: Flyby and Gravity Assist}
+As we are using flybys to speed up the spacecraft we'll pass behind the planet, so the flybys are called "trailing side".
+\paragraph{Pump Angle:}
+By analyzing the velocity triangles of a flyby we can define $\alpha^+$ as the \textbf{pump angle}.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\linewidth]{Triangoli di Velocità.jpg}
+    \caption{Velocity Triangles}
+    \label{fig:placeholder}
+\end{figure}\\
+We can see that when $\alpha^+=0$,  $\mathbf{V}^+$ is maximum. While if $\alpha^+=\frac{\pi}{2}$,  $\mathbf{V}^+$ is minimum.\\
+We can find it through:
+\begin{equation*}
+    \alpha^+=\alpha^--\delta \qquad cos(\alpha^-)=\frac{\mathbf{V_p}\cdot\mathbf{v_\infty}}{V_p\,v_\infty}
+\end{equation*}
+Eventually we can write the module of the final velocity w.r.t. $\alpha^+$:
+\begin{equation*}
+    V^+(\alpha^+)=\sqrt{V_p^2+v_\infty^2+2v_\infty V_p \cos{(\alpha^+)}}
+\end{equation*}
+\paragraph{Implementation Steps}
+We do a maneuver called powered flyby, by eventually imposing a $\Delta V$ impulse in the pericenter of the hyperbole, that will be parallel to the instantaneous velocity.
+\begin{enumerate}
+    \item We set our free parameters $r_p$ and $\Delta V$.
+    \item We compute the hyperbola characteristics before the impulse:
+    \begin{eqnarray*}
+       \mathbf{v_{\infty-}}=\mathbf{v_i}(r_{SoI})-\mathbf{v_{Planet}}\rightarrow v_{\infty-}=\|  \mathbf{v_{\infty-}}\|\rightarrow \varepsilon_{-} = \frac{v_{\infty}^2}{2} \quad ;\quad
+        v_{p-} = \sqrt{v_{\infty}^2 + \frac{2\mu_{Body}}{r_p}} \quad\\
+        a_{-} = -\frac{\mu_B} {2\varepsilon_{-}}\quad; \quad e_{-} = 1 + \frac{r_p v_{\infty}^2}{\mu_B} \quad \rightarrow \theta_{\infty, -} = \arccos\left(-\frac{1}{e_{-}}\right)
+    \end{eqnarray*}
+    \item We carry out the impulse. As the velocity at the pericenter is only tangential we only sum the imposed $\Delta V$:
+    \begin{equation*}
+        v_{p+} = v_{p-} + \Delta V 
+    \end{equation*}
+    \item We compute the characteristics of the new hyperbola:
+    \begin{eqnarray*}
+        \varepsilon_{+} = \frac{v_{p+}^2}{2} - \frac{\mu_B}{r_p} \quad ;\quad  v_{\infty+} = \sqrt{2 \varepsilon_{+}}\\
+        a_{+} = -\frac{\mu_B}{2\varepsilon_{+}}\quad; \quad e_{+} = 1 + \frac{r_p v_{\infty+}^2}{\mu_B}
+    \end{eqnarray*}
+    And finally the true anomaly;
+    \begin{equation*}
+        \theta_{\infty, +} = \arccos\left(-\frac{1}{e_{+}}\right)
+    \end{equation*}
+    \item As we did for the computation of the time of flight in section \textbf{3.2.4} we use Kepler's equation with the parameters before the impulse and after the impulse.
+    \item We  can compute the deflection angle in two ways:
+    \begin{itemize}
+        \item $ \delta_{tot} = \arcsin\left(\frac{1}{e_{-}}\right) + \arcsin\left(\frac{1}{e_{+}}\right)$
+        \item $\delta_{tot} = (\pi - \theta_{\infty, -}) + (\pi - \theta_{\infty, +})$
+    \end{itemize}
+    \item We find the velocity vector in the inertial frame by rotating $\mathbf{v_{\infty-}}$ and summing it to $\mathbf{v_{Planet}}$:
+    \begin{equation*}
+        \mathbf{v_{\infty+}}=\begin{bmatrix}
+            \cos(\delta)& \sin(\delta)& 0\\
+            -\sin(\delta) &\cos(\delta) &0\\
+            0&0&1
+        \end{bmatrix}\mathbf{v_{\infty-}} \quad \rightarrow \quad \mathbf{v_f}=\mathbf{v_{\infty+}}+\mathbf{v_{Planet}}(t_0+\Delta t)
+    \end{equation*}
+    \end{enumerate}
+    \subsubsection{Mathematical Model 4: Uranus Capture}
+    To compute the $\Delta V$ needed for capture we first fix the $r_p$ and the $e$, then we compute the velocity at the pericenter.
+    \begin{equation*}
+        \Delta V_{Closure}=v_{p,Closure}-v_p
+    \end{equation*}
+    \subsubsection{Optimization of the variables}
+The code computes all the possible trajectories deriving from the intervals of all the variables. Discards all the trajectory that cannot reach our final goal and sorts all the other ones finding the one that has the minimum fuel consumption. We can assume that to minimize the velocity to close the last orbit, we must enter with the minimum possible energy, so with a quasi-parabolic trajectory,in fact the eccentricity of the last hyperbolic trajectory is $e=1.5$.
+\section{Interplanetary Phase Results}
+\subsection{Optimized Variables}
+The radius and eccentricity of the final orbit were chosen to implement the second part of the trajectory analysis.
+\begin{table}[h!]
+    \begin{center}
+    \caption{Optimized Variables}
+    \begin{tabular}{|c|c|c|c|c|c|c|c|c|}
+    \hline
+      $h_{LEO}$   & $\Delta V_{LEO}$& $r_{p,Mars}$ & $\Delta V_{Mars}$& $r_{p,Jup}$ & $\Delta V_{Jup}$& $r_{p,Uranus}$ & $\Delta V_{Closure}$& $e_{Closure}$\\
+      \hline
+      &&&&&&&&\\
+       $1000\,km$ & $5.744\tfrac{km}{s}$ & $3996\,km$ &$0\tfrac{km}{s}$ & $1108126\,km$&$0\tfrac{km}{s}$ & $466000\,km$ &$2.013\tfrac{km}{s}$ &0\\
+       &&&&&&&&\\
+         \hline
+    \end{tabular}
+    \label{tab:placeholder}
+    \end{center}
+\end{table}
+\subsection{Trajectory}
+\begin{figure}[htpb]
+    \centering
+    \includegraphics[width=0.9\linewidth]{Trajectory.jpg}
+    \caption{Interplanetary Phase Trajectory}
+    \label{fig:placeholder}
+\end{figure}
+\begin{table}[h!]
+\renewcommand{\arraystretch}{1.2}
+    \setlength{\tabcolsep}{8pt}
+    \centering
+    \caption{Trajectory Info}
+    \begin{tabular}{|c|c|}
+    \hline
+     $\mathbf{\Delta V}_{tot}$ & Time of Flight \\
+     \hline
+     $7.7577\,\frac{km}{s}$  & 20 YEARS - 5 MONTHS - 5 DAYS - 8 HOURS\\
+     \hline 
+    \end{tabular}
+    \label{tab:placeholder}
+\end{table}
+\section{Low Thrust Trajectory Model}
+\subsection{Optimal Control Problem}
+
+
+The problem consists in finding the optimal control vector $\mathbf{u}^*(t)$ such that, inserted into the system dynamics $\mathbf{f}(\mathbf{X}, \mathbf{u}^*, t)$, it produces the wanted state trajectory $\mathbf{X}^*(t)$ which minimizes the cost function $J$ generally subject to constraints. In the problem we define
+\begin{itemize}
+    \item \textbf{State Vector:} $\mathbf{X} = \begin{pmatrix} x_1 \\ \vdots \\ x_m \end{pmatrix}$.
+    \item \textbf{Control Vector:} $\mathbf{u} = \begin{pmatrix} u_1 \\ \vdots \\ u_r \end{pmatrix}$. Can represent direction, intensity, or both.
+    \item \textbf{Equations of Motion (EOM):}
+    \begin{equation*}
+        \dot{\mathbf{x}} = \mathbf{f}(\mathbf{x}, \mathbf{u}, t)
+    \end{equation*}
+    \item \textbf{Boundary Constraints:} Constraints on initial and final states:
+    \begin{equation*}
+        \mathbf{w}(\mathbf{x}_0, t_0, \mathbf{x}_f, t_f) = 0
+    \end{equation*}
+\end{itemize}
+
+\subsection{Problem Classifications}
+We can express the performance index $J$ in different ways.
+\begin{itemize}
+\item Mayer Problem :\\
+The cost depends only on the boundary values (initial and final states):
+\begin{equation*}
+    J = J(\mathbf{x}_0, t_0, \mathbf{x}_f, t_f)
+\end{equation*}
+\item  Lagrange Problem:\\
+The cost is purely an integral over the time interval:
+\begin{equation*}
+    J = \int_{t_0}^{t_f} L(\mathbf{x}, \mathbf{u}, t) \, dt
+\end{equation*}
+\item Bolza Problem:\\
+A combination of both Mayer and Lagrange forms:
+\begin{equation*}
+    J = J(\mathbf{x}_0, t_0, \mathbf{x}_f, t_f) + \int_{t_0}^{t_f} L(\mathbf{x}, \mathbf{u}, t) \, dt
+\end{equation*}
+\end{itemize}
+\subsubsection{Transforming Lagrange to Mayer}
+We can always transform a Lagrange problem into a Mayer one by adding a state variable.
+Let $x_{n+1}$ be an additional state such that:
+\[
+\begin{cases}
+    \dot{x}_{n+1} = L(\mathbf{x}, \mathbf{u}, t) \\
+    x_{n+1}(t_0) = 0
+\end{cases}
+\]
+Then the final value is $x_{n+1}(t_f) = \int_{t_0}^{t_f} L \, dt = J$.
+
+\subsection{Mayer Problem}
+We need to find $\mathbf{x}_0, t_0, \mathbf{u}(t), t_f$ which render $J$ stationary and satisfy the constraints.
+\[
+\delta J = \left(\frac{\partial J}{\partial \mathbf{x}_0}\right)\delta \mathbf{x}_0 + \left(\frac{\partial J}{\partial t_0}\right)\delta t_0 + \left(\frac{\partial J}{\partial \vect{x}_f}\right)\delta \vect{x}_f + \left(\frac{\partial J}{\partial t_f}\right)\delta t_f = 0
+\]
+We have two types of constraints:
+\begin{enumerate}
+    \item \textbf{EOM (Differential constraint):} $\dot{\vect{x}} - \vect{f}(\vect{x}, \vect{u}, t) = 0$
+    \item \textbf{Boundary constraints:} $\vect{\omega} = 0$
+\end{enumerate}
+We define an \textbf{augmented performance index K} using Lagrange multipliers.\\ For the dynamic constraint, the multiplier $\vect{p}(t)$ (also called the costate) that is a function of time. \\For the boundary constraints $\vect{w}$, we use constant multipliers $\vect{\lambda}$.
+
+\begin{equation*}
+    K = J + \sum_{s=1}^{p} \lambda_s w_s - \int_{t_0}^{t_f} \left( \vect{p}(t) \cdot (\dot{\vect{x}} - \vect{f}) \right) dt
+\end{equation*}
+We define the Hamiltonian $H = \vect{p} \cdot \vect{f}$:
+\[
+    K = J + \vect{\lambda} \cdot \vect{\omega} - \int_{t_0}^{t_f} (\vect{p} \cdot \dot{\vect{x}} - H) \, dt
+\]
+To optimize, we need $\delta K = 0$. Differentiating the terms, we derive the Euler-Lagrange equations and Transversality conditions.
+
+\subsubsection{Euler-Lagrange Equations}
+These equations define the costates and an important condition for the optimal control.
+\begin{equation*}
+\begin{cases}
+    \dot{\vect{p}} = -\dfrac{\partial H}{\partial \vect{x}} & \text{(Adjoint Equation)} \\[1em]
+    \dfrac{\partial H}{\partial \vect{u}} = 0 & \text{(Optimality Condition)}
+\end{cases}
+\end{equation*}
+
+\subsubsection{Transversality Conditions}
+\begin{align*}
+    \text{Initial State:} \quad & \vect{p}_0 = - \frac{\partial J}{\partial \vect{x}_0} - \vect{\lambda} \frac{\partial \vect{w}}{\partial \vect{x}_0} \\
+    \text{Initial Time:} \quad & H_0 = \frac{\partial J}{\partial t_0} + \vect{\lambda} \frac{\partial \vect{w}}{\partial t_0} \\
+    \text{Final State:} \quad & \vect{p}_f = \frac{\partial J}{\partial \vect{x}_f} + \vect{\lambda} \frac{\partial \vect{w}}{\partial \vect{x}_f} \\
+    \text{Final Time:} \quad & H_f = - \frac{\partial J}{\partial t_f} - \vect{\lambda} \frac{\partial \vect{w}}{\partial t_f}
+\end{align*}
+\subsection{Contensou-Pontryagin Problem}
+It is a special Mayer problem where $\vect{X}_0\,,\,t_0$ and some components of $\vect{X}_f$ are fixed.(Eventually also $t_f$) For $\vect{X}\in\mathbb{R}^n$ the constraints are:
+\[
+\begin{cases}
+    \vect{X}_0-\hat{\vect{X}}_0=0\\
+    t_0-\hat{t}_0=0\\
+    (t_f-\hat{t_f}=0)\\
+    x_{f,i}-\hat{x}_{f,i}=0 \,\,\,\forall i<n
+\end{cases}
+\]
+In this kind of problem we can apply the \textbf{Pontryagin Maximum Principle} that states: " Being $\vect{X}^*\,,\,\vect{u}^*\,,\,\vect{p}^*$ an optimal solution, if we fix $\vect{X}^*\,,\,\vect{p}^*$, $\forall t\quad \vect{u}(t)$ maximizes the Hamiltonian."
+\begin{equation*}
+    \vect{u}^*(t)=\arg \left( \max\{H(\vect{X}^*\,,\,\vect{u}\,,\,\vect{p}^*,t)\} \right)
+\end{equation*}
+We can also find \textbf{end points condition} using the transversality equations, an important one for when the final time is free is $H_f=0$.
+
+\subsection{Model of CEV system for the optimization problem}
+A Constant Ejection Velocity System is characterized by a linear behaviour in the $F-q$ Plane. The Ejection velocity is defined as $W=\frac{F}{q}$, where $F\,[N]$ is the thrust and $q\,[\frac{kg}{s}]$ is the mass rate. Other important quantities are:
+\begin{itemize}
+    \item Power: $P=\frac{1}{2}qW^2$
+    \item Specific Impulse: $I_{SP}=\frac{W_{max}}{g_0}$
+    \item Ration between maximum thrust and engine weight on ground: $\frac{F_{max}}{g_0 \cdot m_{Engine}}$
+    \item Thrust Acceleration: $\Gamma=\frac{F}{m}\,[\frac{m}{s^2}]$.
+\end{itemize}
+This system can be both High Thrust and Low Thrust. The difference is in the range of the parameters:
+\begin{itemize}
+    \item High Thrust: $I_{SP}\in[300\,,\,1000]s$ while $\frac{F_{max}}{g_0 \cdot m_{Engine}}\in[10\,,\,100]$.
+    \item Low Thrust:$I_{SP}\in[3000\,,\,10000]s$ while $\frac{F_{max}}{g_0 \cdot m_{Engine}}\in[10^{-4}\,,\,10^{-2}]$.
+\end{itemize}
+We can define a \textbf{performance index} as:
+\begin{equation*}
+    C=\int^t_{t_0}\Gamma\,dt
+\end{equation*}
+\subsection{2D Trajectory Optimization using the Pontryagin Problem}
+As we want our problem to be a Mayer one, we add another state variable $\vect{X}=(x,y,v_x,v_y,C)^T$.\\
+\textbf{State Equations:}
+\begin{equation*}
+    \begin{cases}
+        \vect{{\dot{r}}}=\vect{v}\\
+        \vect{\dot{v}}=\vect{g}(\vect{r},t)+\vect{\Gamma}\\
+        \dot{C}=\Gamma
+    \end{cases}
+\end{equation*}
+Where $\vect{\Gamma}=\Gamma\,\vect{D}$ is the Thrust acceleration vector($\vect{D}$ is the direction vector). We define another performance index:
+\begin{equation*}
+    J=-C_f
+\end{equation*}
+This time our goal is to maximize J (it would be the same of minimizing J=$C_f$).
+\subsubsection{Definition of the Hamiltonian}
+\begin{eqnarray*}
+    H=\vect{p}\cdot\vect{f}=\vect{p_r}\cdot\vect{{\dot{r}}}+\vect{p_v}\cdot\vect{\dot{v}}+p_c\cdot\dot{C}=\\
+    =\vect{p_r}\cdot\vect{v}+\vect{p_v}\cdot(\Gamma\,\vect{D+\vect{g}})+p_c\cdot\Gamma
+\end{eqnarray*}
+We use the Pontryagin Maximum Principle to find $\Gamma$ and $\vect{D}$:
+\begin{itemize}
+    \item To find $\vect{D}$, we must find the direction that maximizes $\vect{p_v}\cdot(\Gamma\,\vect{D+\vect{g}})$ and that happens when $\vect{D}\parallel \vect{p_v}$:\\
+    \textbf{Optimal Direction:} \[\vect{D=\frac{\vect{p_v}}{\|\vect{p_v}\|}}\]
+    \item To find $\Gamma$ we can write the module of the quantities in H as:
+    \begin{eqnarray*}
+        H=p_v\cdot\Gamma\,+p_c\cdot\Gamma +c
+    \end{eqnarray*}
+    Where c are the terms independent from the control. So we have to maximize $p_v\,\Gamma+p_c\,\Gamma$.\\
+    In this case we can see that the optimal control is a bang-bang control where:
+    \begin{equation*}
+        \Gamma^*=
+        \begin{cases}
+    \Gamma_{max}\quad;\quad(\|\vect{p_v}\|+p_c)>0\\
+    0\quad\,\,\,\,\quad;\quad(\|\vect{p_v}\|+p_c)\leq0\\        
+        \end{cases}
+    \end{equation*}
+    We call $(\|\vect{p_v}\|+p_c)$ switch function. This function alternates Maximum Thrust Arcs to Coasting Arcs.
+\end{itemize}
+\subsubsection{Adjoint System}
+We find the Adjoint System using the Euler Equation $\vect{\dot{p}}=-\frac{\partial H^*}{\partial \vect{X}}$.
+\begin{equation*}
+H^*=\vect{p_r}\cdot\vect{v}+\vect{p_v}\,\vect{{g}}+\Gamma_{max}\cdot \vect{D}^*\,\delta_{-1}(\|\vect{p_v}\|+p_c) \cdot (\|\vect{p_v}\|+p_c)
+\end{equation*}
+\begin{equation*}
+    \vect{\dot{p}}=
+    \begin{cases}
+        \vect{\dot{p_r}}=-\vect{p_v\cdot\frac{\partial\vect{g}}{\partial\vect{r}}}\\
+        \vect{\dot{p_v}}=-\vect{p_r}\\
+        \dot{p_c}=-\frac{\Gamma_{max}}{W}(\|\vect{p_v}\|+p_c)\,\, \delta_{-1}(\|\vect{p_v}\|+p_c)
+    \end{cases}
+\end{equation*}
+Where $\delta_{-1}(\cdot)$ is the step function and $\frac{\partial\vect{g}}{\partial\vect{r}}$ is the Dynamical Matrix. We see that when $(\|\vect{p_v}\|+p_c)\leq0\rightarrow\dot{p_c}=0$ so $p_c=const$.
+\section{Low Thrust Trajectory Optimization}
+\subsection{Dynamical Model}
+We use the polar model as we did with the interplanetary trajectory. We have 10 scalar equations:
+\begin{equation*}
+\scalebox{1.3}{
+    \begin{cases}
+    \dot{r} = v_r \\
+    \dot{\theta} = \frac{v_\theta}{r} \\
+    \dot{v}_r = \frac{v_\theta^2}{r} - \frac{\mu}{r^2} + \Gamma_r \\
+    \dot{v}_\theta = -\frac{v_r v_\theta}{r} + \Gamma_\theta\\
+    \dot{C}=\Gamma^*\\
+\end{cases}
+\quad
+\begin{cases}
+    \dot{p}_r = p_\theta \frac{v_\theta}{r^2} + p_{v_r} \left( \frac{v_\theta^2}{r^2} + \frac{2\mu}{r^3} \right) - p_{v_\theta} \left( \frac{v_r v_\theta}{r^2} \right) \\
+    \dot{p}_\theta = 0 \\
+    \dot{p}_{v_r} = -p_r + p_{v_\theta} \frac{v_\theta}{r} \\
+    \dot{p}_{v_\theta} = -\frac{p_\theta}{r} - 2 p_{v_r} \frac{v_\theta}{r} + p_{v_\theta} \frac{v_r}{r}\\
+    \dot{p}_C = -\frac{\Gamma^*}{W} \left( ||\mathbf{p}_v|| + p_C \right)
+\end{cases}
+}
+\end{equation*}
+We define $\Gamma_r=\Gamma_{max}\cdot D_r$, while $\Gamma_{\theta}=\Gamma_{max}\cdot D_{\theta}$, and we find $\vect{D}$ through $\vect{p_v}$.\\
+We can also write the extended form of the Hamiltonian:
+\begin{equation*}
+\scalebox{1.3}{
+   $\displaystyle H = p_{r}\cdot v_{r} + p_{v_r}\cdot \left( \frac{v_{\theta}^2}{r} - \frac{\mu}{r^2} \right) - p_{v_\theta}\cdot \frac{v_{r}\cdot v_{\theta}}{r} + \Gamma^* \left( \|\vect{p_v}\|+p_c\right)$
+    }
+\end{equation*}
+\newpage
+\subsection{Known Parameters}
+\begin{table}[h!]
+\renewcommand{\arraystretch}{1.2}
+    \setlength{\tabcolsep}{8pt}
+    \centering
+    \caption{Engine and System Parameters}
+    \label{tab:parametri_mission}
+    \vspace{0.2cm}
+    \begin{tabular}{l l c l}
+        \toprule
+        \textbf{Parameter} & \textbf{Symbol} & \textbf{Value} & \textbf{Measurement Unit} \\ 
+        \midrule
+        \multicolumn{4}{l}{\textit{Planetary Constants (Uranus)}} \\
+        Gravitational Parameter & $\mu_{ur}$ & $5\,793\,939$ & $\text{km}^3/\text{s}^2$ \\
+        Planet's Radius & $R_{ur}$ & $25\,362$ & $\text{km}$ \\
+        Target Orbit Radius (Umbriel) & $R_{target}$ & $266\,000$ & $\text{km}$ \\
+        Standard Grav. Acc. & $g_0$ & $9.81$ & $\text{m}/\text{s}^2$ \\
+        \midrule
+        \multicolumn{4}{l}{\textit{Engine's Specifics}} \\
+        Maximum Thrust & $F_{\max}$ & $0.6$ & $\text{N}$ \\
+        Initial Mass & $m_0$ & $850$ & $\text{kg}$ \\
+        Specific Impulse & $I_{sp}$ & $3000$ & $\text{s}$ \\
+        Ejection Velocity & $W$ & $29.43$ & $\text{km}/\text{s}$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+\subsection{Boundary Conditions}
+\begin{table}[h!]
+\renewcommand{\arraystretch}{1.5}
+    \setlength{\tabcolsep}{12pt}
+\caption{Known Starting and Finishing Conditions}
+    \centering
+    \begin{tabular}{|c|c|c|c|c|}
+    \hline
+        $r_0$ & $\theta_0$ & $v_{r_0}$ & $v_{\theta_0}$ & $C_0$ \\
+        \hline
+         $466\,000\,km$& 0 & 0 & $\sqrt{\frac{\mu}{r_0}}$ &0\\
+         \hline
+         $r_f$ & $\theta_f$ & $v_{r_f}$ & $v_{\theta_f}$ & $p_{\theta_0}$ \\
+         \hline
+         $266\,000\,km$& free& 0 & $\sqrt{\frac{\mu}{r_f}}$ & 0 \\
+         \hline
+    \end{tabular}
+    \label{tab:placeholder}
+\end{table}
+We found $p_{\theta}=const=0$, $H_f=0$ and $p_{C_f}=-1$ from the trasversality equations.\\
+\subsection{Shooting Method}
+To find the costate variables that we need to minimize the fuel consumption, we use a function of the calculator that finds the minimum of a function given  some boundaries. The boundaries can be Upper or Lower ones ,for the parameters that we are searching for, but mostly non linear constraints that the parameters have to comply with. This equations will contain the boundaries that we know of. The optimizer will need a first guess of the parameters that we have to find, in which there will be the final time and $C_f$, which is the prime parameter that the optimizer must minimize.
+\subsubsection{Non Linear Constraints}
+The Optimizier will try to reach zero for all the non linear constraints.
+\begin{eqnarray*}
+    \begin{cases}
+        r_f=R_{target}\\
+        v_{r_f}=0\\
+        v_{\theta_f}=v_{\theta_{target}}\\
+        H_f=0\\
+        p_{C_f}=-1
+    \end{cases}
+    \quad \rightarrow NLC=
+    \begin{bmatrix}
+        \alpha\,(r_f-R_{target})\\
+       \beta\, (v_{r_f})\\
+       \gamma\, (v_{\theta_f}-v_{\theta_{target}})\\
+        H_f\\
+        p_{C_f}+1
+    \end{bmatrix}
+\end{eqnarray*}
+We added some terms to normalize the constraints. In our case $\alpha=10^{-3}$, $\beta=100$, $\gamma=10$.
+\subsubsection{Initial Guesses}
+The Optimizer is really sensitive to initial guess changes, so before starting to input random parameters there are some methods to refine the guess.
+\begin{itemize}
+    \item As the radial velocity will be always very small, we take as an initial guess of $p_{v_{r_0}}$a value near zero and as we want to diminish the radius, we take a negative value.
+    \item The tangential velocity must be higher, but to have a smoother curve we don't take a really high value of $p_{v_{\theta_0}}$. We choose a negative sign for the same reason of the radial velocity costate.
+    \item We take $p_{C_0}$ near -1.
+    \item The final time will be much higher than a Homann transfer.
+    \item As a good approximation we take $C_f=\frac{1}{2}\Gamma_{max}\cdot t_f$
+\end{itemize}
+\begin{table}[h!]
+    \centering
+    \caption{Initial Guesses, Lower Bounds and Upper Bounds}
+    
+    % Aumenta l'altezza delle righe (Default è 1.0)
+    \renewcommand{\arraystretch}{1.5}
+    \setlength{\tabcolsep}{12pt}
+    
+    \begin{tabular}{|c|c|c|c|c|c|c|}
+    \hline
+         & $p_{r_0}$ & $p_{v_{r_0}}$ &$p_{v_{\theta_0}}$&$p_{C_0}$ & $t_f$&$C_f$\\
+    \hline
+      Value & 0 & -0.2402& -1.7 &-0.9 & 3669600 &1.2952 \\
+    \hline
+      LB & -5&-10 &-10 &-5 & $10^{6}$ &0 \\
+    \hline
+      UB & 5 & 10 & 10 & 5&$2\cdot10^{7}$ &$\infty$\\
+    \hline
+    \end{tabular}
+    \label{tab:spacing}
+\end{table}
+\newpage
+\section{Low Thrust Trajectory Results}
+\subsection{Iterations Informations}
+\begin{table}[h!]
+    \centering
+    \label{tab:fmincon_iterations}
+    \vspace{0.2cm} % Un po' di spazio tra caption e tabella
+    
+    % Ridimensiona la tabella per adattarla alla larghezza del testo
+    \resizebox{0.9\textwidth}{!}{%
+        \begin{tabular}{c c c c c c}
+            \toprule
+            \textbf{Iter} & \textbf{F-count} & \textbf{f(x)} & \textbf{Feasibility} & \textbf{\shortstack{First-order \\ optimality}} & \textbf{\shortstack{Norm of \\ step}} \\
+            \midrule
+            0 & 7  & $1.295153e+00$  & $1.803e+01$ & $6.265e-01$ & -- \\
+            1 & 14 & $5.990905e-01$  & $1.803e+01$ & $4.409e-01$ & $2.080e+00$ \\
+            2 & 21 & $2.995453e-03$  & $1.803e+01$ & $2.995e-03$ & $1.204e+01$ \\
+            3 & 28 & $8.353543e-02$  & $1.801e+01$ & $8.296e-02$ & $6.767e+01$ \\
+            4 & 40 & $-1.380985e-02$ & $1.783e+01$ & $1.371e-02$ & $2.443e-01$ \\
+            5 & 56 & $-1.392966e-02$ & $1.782e+01$ & $1.383e-02$ & $1.956e-03$ \\
+            \bottomrule
+        \end{tabular}%
+    }
+\end{table}
+\subsection{Hamiltonian Analysis}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\linewidth]{Hamiltonian.jpg}
+    \caption{Hamiltonian Evolution in Time}
+    \label{fig:placeholder}
+\end{figure}
+We can see that the Hamiltonian tends to 0 at $t_f$, the exact value at that time is $H_f=5.2\cdot10^{-8}$.
+\subsection{Trajectory Plot}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\linewidth]{Optimized Trajectory.jpg}
+    \caption{Optimized Trajectory Plot}
+    \label{fig:placeholder}
+\end{figure}
+\begin{table}[h!]
+\renewcommand{\arraystretch}{1.5}
+    \setlength{\tabcolsep}{12pt}
+    \centering
+    \caption{Trajectory Info}
+    \begin{tabular}{|c|c|}
+    \hline
+     $\mathbf{\Delta V}_{tot}$ & Time of Flight \\
+     \hline
+     $1033.5811\,\frac{m}{s}$  & 33 DAYS - 22 HOURS\\
+     \hline 
+     $\mathbf{\Delta V}_{Homann}$ & $\mathbf{\Delta V}_{Saved}$ \\
+     \hline
+     $1120\,\frac{m}{s}$ & $87\,\frac{m}{s}$\\
+     \hline
+    \end{tabular}
+    \label{tab:placeholder}
+\end{table}
+
+\newpage
+\subsection{Controls}
+\begin{figure}[htbp!]
+    \centering
+    \includegraphics[width=0.9\linewidth]{Switch Function and Control.jpg}
+    \label{fig:placeholder}
+\end{figure}
+\begin{figure}[htbp!]
+    \centering
+    \includegraphics[width=0.95\linewidth]{Thrust Angle.jpg}
+    \label{fig:placeholder}
+\end{figure}
+\newpage
+\subsection{Velocity}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\linewidth]{Velocity.jpg}
+\caption{Evolution of the velocity in time.}
+    \label{fig:placeholder}
+\end{figure}
+\section{Conclusions}
+In this work, a preliminary mission design towards Umbriel was developed, with the primary objective of testing the efficacy of different orbital optimization methods. The analysis was structured into two distinct but complementary phases: an interplanetary phase and a low-thrust breaking phase.\\
+For the interplanetary leg, the use of the patched conics approach and the exploitation of gravity assist maneuvers on Mars and Jupiter allowed reaching Uranus' orbit while keeping the propellant budget within acceptable limits, with a total time of flight of approximately 20 years.\\
+Subsequently, the application of Pontryagin's Maximum Principle allowed for the optimization of the low-thrust trajectory for insertion into the final orbit. \\
+Numerical results confirm the validity of the approach: the optimized maneuver requires a duration of about 34 days and a $\Delta V$ of only $1.03$ km/s, which is lower than the $1.12$ km/s required by an equivalent Hohmann transfer.Overall, the proposed mission strategy led to a drastic reduction in the total energy cost.\\
+Compared to an estimate of $16.27$ km/s required for a standard bi-elliptic transfer without gravity assists and a Homann breaking phase, our optimized solution reduced the cost to $8.791$ km/s. This net saving of $7.48$ km/s demonstrates how the integration of assisted maneuvers and continuous thrust optimization are fundamental for the feasibility of missions towards the outer solar system.
+\end{document}
