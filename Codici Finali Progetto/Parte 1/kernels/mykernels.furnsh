@@ -1,0 +1,17 @@
+KPL/MK
+
+\begindata
+ KERNELS_TO_LOAD = (
+                    './kernels/naif0012.tls'
+                    './kernels/gm_de431.tpc'
+                    './kernels/pck00010.tpc'
+                    './kernels/de442s.bsp'
+                    './kernels/ura184_part-1.bsp'
+                    './kernels/ura184_part-2.bsp'
+                    './kernels/ura184_part-3.bsp'
+                    './kernels/sat083.bsp'
+                    './kernels/mar099.bsp'
+                    './kernels/jup347.bsp'
+                    )
+                      
+\begintext
