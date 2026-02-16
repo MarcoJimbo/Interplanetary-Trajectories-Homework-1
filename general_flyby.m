@@ -16,7 +16,7 @@ function [v_inf2, def_angle, t_in, t_out, delta_t, ok, status_msg, info] = gener
 
 % ---------- init ----------
 ok = true; status_msg = "ok";
-v_inf2 = NaN; def_angle = NaN; t_in = NaN; t_out = NaN; delta_t = NaN;
+v_inf2 = NaN; def_angle = NaN; t_in = NaN; t_out = NaN; delta_t = NaN; dV_flyby = NaN;
 
 % ---------- check ----------
 if any(~isfinite([v_inf, r_p, mu_p, dV, r_SOI])) || v_inf < 0 || r_p <= 0 || mu_p <= 0 || r_SOI <= 0

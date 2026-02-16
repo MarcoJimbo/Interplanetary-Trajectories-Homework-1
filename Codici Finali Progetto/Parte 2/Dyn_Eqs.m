@@ -1,51 +1,53 @@
-function dstate = Dyn_Eqs(t, state)
-global gamma_max W mu_ur
+function dstate = Dyn_Eqs(tbar, state)
+global gamma_max mu_ur R_start W
 
-% Estrazione stati
-r = state(1);
-% theta = state(2); % Non serve esplicitamente per le derivate
-vr = state(3);
-vtheta = state(4);
-% C = state(5); % Non serve per le derivate
+L  = R_start;
+V  = sqrt(mu_ur*(1+0.6) / L);
+T  = L / V;
+A  = V / T;                 % = mu/L^2
+gbar = gamma_max / A;       % gamma_max normalizzata
+kVW  = V / W;               % fattore V/W
 
-% Estrazione costati
-Pr = state(6);
-Ptheta = state(7);
-Pvr = state(8);
-Pvtheta = state(9);
-PC = state(10);
+% Stati bar
+r   = state(1);
+vr  = state(3);
+vt  = state(4);
+x5  = state(5);
 
-Pv = [Pvr; Pvtheta];
-norm_Pv = norm(Pv);
+% Costati bar
+P1 = state(6);
+P2 = state(7);
+P3 = state(8);
+P4 = state(9);
+P5 = state(10);
 
-% Controllo ottimo
-if (norm_Pv + PC) > 0
-    % Motore Acceso
-    u_r = Pvr / norm_Pv;       % Coseno direttore radiale
-    u_theta = Pvtheta / norm_Pv; % Coseno direttore tangenziale
-    gamma_r = gamma_max * u_r;
-    gamma_theta = gamma_max * u_theta;
-    dC = gamma_max;
+% Switching (equivalente in segno)
+Sigma = hypot(P3,P4)/x5 + kVW*P5;
+
+% Controllo bar
+u1 = (Sigma > 0) * gbar;
+
+den = hypot(P3,P4);
+if den < 1e-12
+    su2 = 0;  cu2 = -1;
 else
-    % Motore Spento
-    gamma_r = 0;
-    gamma_theta = 0;
-    dC = 0;
+    su2 = -P3/den;
+    cu2 = -P4/den;
 end
 
-% Equazioni del moto
-dr = vr;
-dtheta = vtheta/r;
-dvr = vtheta^2/r - mu_ur/r^2 + gamma_r;
-dvtheta = -vr*vtheta/r + gamma_theta;
+% Dinamica bar (mu_bar = 1)
+dr  = vr;
+dth = vt/r;
+dvr = vt^2/r - 1/r^2 + (u1/x5)*su2;
+dvt = -vr*vt/r + (u1/x5)*cu2;
+dx5 = -kVW * u1;            % <-- QUI il fattore V/W è fondamentale
 
-% Equazioni dei costati
-dPr = Ptheta*vtheta/r^2 + Pvr*(vtheta^2/r^2 + 2*mu_ur/r^3) - Pvtheta*(vr*vtheta/r^2);
-dPtheta = 0;
-dPvr = -Pr + Pvtheta*vtheta/r;
-dPvtheta = -Ptheta/r - 2*Pvr*vtheta/r + Pvtheta*vr/r;
-dPC = -(gamma_max/W) * (norm_Pv + PC);
+% Costati bar (stessa struttura, mu_bar = 1)
+dP1 = P2*vt/r^2 - P3*(-vt^2/r^2 + 2/r^3) - P4*(vr*vt/r^2);
+dP2 = 0;
+dP3 = -P1 + P4*vt/r;
+dP4 = -P2/r - 2*P3*vt/r + P4*vr/r;
+dP5 = -u1/x5^2 * hypot(P3,P4);
 
-dstate = [dr; dtheta; dvr; dvtheta; dC; dPr; dPtheta; dPvr; dPvtheta; dPC];
+dstate = [dr; dth; dvr; dvt; dx5; dP1; dP2; dP3; dP4; dP5];
 end
-

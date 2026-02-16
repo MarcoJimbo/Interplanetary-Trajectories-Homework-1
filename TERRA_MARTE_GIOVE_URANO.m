@@ -147,6 +147,7 @@ for i = 1:size(dV_tot,1) % variazione di dV_Terra
             X_Mars_exit{i,j,l} = struct( ...
             'rp',          r_p_Marte(1,l),...      % [km] raggio al pericentro
             'dV',          dV(1,j),...             % [km/s] impulso erogato
+            'dV_flyby',          dV_Marte_flyby,...       % [km/s] impulso flyby
             'r',           [r_SC(1) , r_SC(2), r_SC(3)], ...  % [km] vettore posizione
             'v',           [v_SC(1) , v_SC(2), v_SC(3)], ...  % [km/s] vettore velocità
             'v_inf_1',     norm_v_inf_M, ...        % [km/s] velocità di eccesso iperbolico in entrata
@@ -185,6 +186,7 @@ for i = 1:size(dV_tot,1) % variazione di dV_Terra
                     X_Jupiter_exit{i,j,l,k,m} = struct( ...
                     'rp',          r_p_Giove(1,m),...      % [km] raggio al pericentro
                     'dV',          dV(1,k),...             % [km/s] impulso erogato
+                    'dV_flyby',    dV_Giove_flyby,...      % [km/s] dV flyby
                     'r',           [r_SC(1) , r_SC(2), r_SC(3)], ...  % [km] vettore posizione
                     'v',           [v_SC(1) , v_SC(2), v_SC(3)], ...  % [km/s] vettore velocità
                     'v_inf_1',     norm_v_inf_G, ...        % [km/s] velocità di eccesso iperbolico in entrata
