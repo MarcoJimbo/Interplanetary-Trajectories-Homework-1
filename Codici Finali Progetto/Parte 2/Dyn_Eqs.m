@@ -2,7 +2,7 @@ function dstate = Dyn_Eqs(tbar, state)
 global gamma_max mu_ur R_start W
 
 L  = R_start;
-V  = sqrt(mu_ur*(1+0.6) / L);
+V  = sqrt(mu_ur*(1+0.8) / L);
 T  = L / V;
 A  = V / T;                 % = mu/L^2
 gbar = gamma_max / A;       % gamma_max normalizzata

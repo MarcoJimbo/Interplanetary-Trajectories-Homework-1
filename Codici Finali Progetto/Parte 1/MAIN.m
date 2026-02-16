@@ -88,10 +88,10 @@ v_Giove = sqrt(gm_Sole/d_Giove);
 v_Urano = sqrt(gm_Sole/d_Urano);
 
 % definizione orbita target intorno Urano
-h_target = 266000+200000; % [km] r umbriel + quota 
+h_target = 266000+400000; % [km] r umbriel + quota 
 
 % definizione eccentricità di cattura
-e_capture = 0;
+e_capture = 0.8;
 
 %% determinazione condizioni iniziali
 

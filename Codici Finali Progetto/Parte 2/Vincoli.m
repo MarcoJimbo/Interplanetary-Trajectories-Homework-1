@@ -2,7 +2,7 @@ function [c,ceq] = Vincoli(X)
 global R_start r_umbriel mu_ur W
 
 L  = R_start;
-V  = sqrt(mu_ur *(1+0.6)/ L);
+V  = sqrt(mu_ur *(1+0.8)/ L);
 T  = L / V;
 
 % Decision variables: [P1_0bar, P3_0bar, P4_0bar, P5_0, tfbar]
